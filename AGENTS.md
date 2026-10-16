@@ -2,6 +2,8 @@
 
 Read README.md, INSTALL.md, and SECURITY.md before changing installation or authentication code.
 
+- Read DEVELOPMENT.md before implementation. Confirm the Git remote/branch and classify the change as reusable application code, private installation operation, or a coordinated change. State the target repository, compatibility impact and checks before editing; never let a deployment repository become an unnoticed application fork.
+- Reusable product changes belong here. Operator configuration/data/secrets remain private. Publish a checked version before a private update PR pins its full commit; public CI never deploys an installation. The automatic bridge to private deployments is not implemented. See DEVELOPMENT.md for compatibility and transition requirements.
 - This is a standalone open-source questionnaire application. Supported targets are local development and an operator-owned Cloudflare account. A general Docker/VPS production target is not implemented.
 - Use Node.js 26.3.0 and npm with package-lock.json. Use the commands in INSTALL.md; never invent provider permissions or remove release checks to make installation pass.
 - Keep real configuration, credentials, respondent data, uploads, database exports, and operational notes out of Git and public logs. Use reserved example domains and fictional fixtures in tests. Never commit .env files or wrangler.install.jsonc.
