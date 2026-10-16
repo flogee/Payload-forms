@@ -34,7 +34,7 @@ npm run typecheck
 npm run test:ci
 ```
 
-The last command runs a fresh database, development HTTP tests, and a native Worker build and HTTP suite in disposable directories. It does not use a live deployment. See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md).
+The last command runs a fresh database, development HTTP tests, and a native Worker build and HTTP suite in disposable directories. It does not use a live deployment. See [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md), and the [development and release policy](DEVELOPMENT.md) for change ownership, compatibility and private installation updates.
 
 ## Deployment and privacy
 
