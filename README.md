@@ -1,6 +1,6 @@
 # Payload Forms
 
-An MIT-licensed, self-hosted questionnaire application built with Payload CMS, Next.js, and Cloudflare Workers. Maintained by Florian Bauernfeind.
+An MIT-licensed, self-hosted questionnaire application built with Payload CMS, Next.js, and Cloudflare Workers. Maintained by Florian Bauernfeind (Entribe).
 
 Create versioned questionnaires, share a participation link or QR code, and review responses in a protected administration area. The participant interface is currently German. This initial public release supports **pretests with fictional data**; real research collection is deliberately disabled.
 
@@ -46,6 +46,6 @@ Usage limits reduce specific application operations; they are not an account-wid
 
 ## License and attribution
 
-Copyright (c) 2026 Florian Bauernfeind. [MIT License](LICENSE): commercial use, modification, redistribution and forks are welcome. Retain the copyright and license notice in redistributed copies or substantial portions. A visible UI credit is appreciated but is not an additional license condition.
+Copyright (c) 2026 Florian Bauernfeind (Entribe). [MIT License](LICENSE): commercial use, modification, redistribution and forks are welcome. Retain the copyright and license notice in redistributed copies or substantial portions. A visible UI credit is appreciated but is not an additional license condition.
 
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the vendored Payload authentication compatibility code. This project is independent and is not endorsed by Payload CMS or OpenAI.
