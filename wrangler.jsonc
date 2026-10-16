@@ -1,0 +1,155 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "payload-forms-local",
+  "main": "worker.ts",
+  "compatibility_date": "2026-10-05",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "workers_dev": false,
+  "preview_urls": false,
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_sender_addresses": [
+        "forms@localhost.invalid"
+      ],
+      "allowed_destination_addresses": [
+        "notify@localhost.invalid",
+        "second@localhost.invalid"
+      ]
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "D1",
+      "database_name": "payload-forms-local",
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "payload-forms-local-images"
+    }
+  ],
+  "vars": {
+    "PUBLIC_GUARD_ENABLED": "1"
+  },
+  "ratelimits": [
+    {
+      "name": "PUBLIC_IP_RATE",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 300,
+        "period": 60
+      }
+    },
+    {
+      "name": "PUBLIC_TOTAL_RATE",
+      "namespace_id": "1002",
+      "simple": {
+        "limit": 1000,
+        "period": 60
+      }
+    }
+  ],
+  "env": {
+    "internal": {
+      "name": "payload-forms",
+      "workers_dev": false,
+      "preview_urls": false,
+      "limits": {
+        "cpu_ms": 1000
+      },
+      "ratelimits": [
+        {
+          "name": "PUBLIC_IP_RATE",
+          "namespace_id": "1001",
+          "simple": {
+            "limit": 300,
+            "period": 60
+          }
+        },
+        {
+          "name": "PUBLIC_TOTAL_RATE",
+          "namespace_id": "1002",
+          "simple": {
+            "limit": 1000,
+            "period": 60
+          }
+        }
+      ],
+      "send_email": [
+        {
+          "name": "EMAIL",
+          "allowed_sender_addresses": [
+            "forms@example.org"
+          ],
+          "allowed_destination_addresses": [
+            "operator@example.org"
+          ]
+        }
+      ],
+      "triggers": {
+        "crons": [
+          "*/5 * * * *"
+        ]
+      },
+      "routes": [
+        {
+          "pattern": "forms.example.org",
+          "custom_domain": true
+        },
+        {
+          "pattern": "forms.example.net",
+          "custom_domain": true
+        }
+      ],
+      "vars": {
+        "PUBLIC_GUARD_ENABLED": "1",
+        "SURVEY_ORIGINS": "https://forms.example.org,https://forms.example.net",
+        "LOCAL_PROTOTYPE": "0",
+        "DISABLE_SCHEMA_PUSH": "1",
+        "MAIL_ENABLED": "1",
+        "MAIL_FROM": "forms@example.org",
+        "MAIL_ORIGIN": "https://forms.example.org",
+        "MAIL_ALLOWED_RECIPIENTS": "operator@example.org",
+        "MAIL_MONTHLY_LIMIT": "500",
+        "MAIL_LOCAL_TEST": "0",
+        "OPS_ALERT_RECIPIENT": "operator@example.org",
+        "ACCESS_LOGIN_ENABLED": "1",
+        "ACCESS_TEAM_DOMAIN": "https://your-team.cloudflareaccess.com",
+        "ACCESS_AUD": "REPLACE_WITH_ACCESS_AUDIENCE",
+        "ACCESS_SYNC_ENABLED": "1",
+        "ACCESS_ACCOUNT_ID": "00000000000000000000000000000000",
+        "ACCESS_APP_ID": "00000000-0000-0000-0000-000000000000",
+        "ACCESS_POLICY_ID": "00000000-0000-0000-0000-000000000000",
+        "ACCESS_INITIAL_EMAILS": "operator@example.org",
+        "RELEASE_PROBE_SLUG": "sample"
+      },
+      "d1_databases": [
+        {
+          "binding": "D1",
+          "database_name": "payload-forms",
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "remote": true
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "MEDIA",
+          "bucket_name": "payload-forms-images",
+          "jurisdiction": "eu",
+          "remote": true
+        }
+      ],
+      "account_id": "00000000000000000000000000000000"
+    }
+  }
+}

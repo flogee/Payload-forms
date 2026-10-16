@@ -1,0 +1,4 @@
+.participant-privacy { min-width: 0; border: 0; padding: 0; margin: 1.5rem 0; }
+.participant-privacy legend { font-weight: 650; }
+.participant-privacy__text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.participant-privacy__contact { display: grid; gap: .5rem; }

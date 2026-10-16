@@ -1,0 +1,21 @@
+.survey-retention-status {
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: var(--style-radius-s);
+  background: var(--theme-elevation-50);
+}
+
+.survey-retention-status h3 { margin-top: 0; }
+.survey-retention-status__hint { color: var(--theme-elevation-600); }
+.survey-retention-status__address { overflow-wrap: anywhere; }
+.survey-retention-status__notice {
+  margin: 1rem 0;
+  padding: 0 1rem;
+  border-left: 3px solid var(--theme-elevation-600);
+}
+.survey-retention-status__counts { display: flex; flex-wrap: wrap; gap: 1rem 2rem; }
+.survey-retention-status__counts dt { color: var(--theme-elevation-600); }
+.survey-retention-status__counts dd { margin: .25rem 0 0; font-weight: 600; }
+.survey-retention-status .btn { margin: .25rem 0; }
+.survey-retention-status a:focus-visible { outline: 2px solid var(--theme-elevation-800); outline-offset: 2px; }

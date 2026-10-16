@@ -1,0 +1,4 @@
+.survey-privacy-status { padding: 1.25rem; margin-bottom: 1.5rem; border: 1px solid var(--theme-elevation-200); border-radius: var(--style-radius-s); background: var(--theme-elevation-50); }
+.survey-privacy-status h3 { margin-top: 0; }
+.survey-privacy-status__text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.survey-privacy-status a:focus-visible, .survey-privacy-status summary:focus-visible { outline: 2px solid var(--theme-elevation-800); outline-offset: 2px; }

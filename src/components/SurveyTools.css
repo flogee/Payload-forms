@@ -1,0 +1,13 @@
+.survey-tools {
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: var(--style-radius-s);
+  background: var(--theme-elevation-50);
+}
+.survey-tools h3 { margin-top: 0; }
+.survey-tools__buttons { display: flex; flex-wrap: wrap; gap: .75rem; }
+.survey-tools .btn { margin: .25rem 0; }
+.survey-tools__hint { color: var(--theme-elevation-600); }
+.survey-tools p { overflow-wrap: anywhere; }
+.survey-tools a:focus-visible { outline: 2px solid var(--theme-elevation-800); outline-offset: 2px; }

@@ -1,0 +1,25 @@
+node_modules/
+.next/
+.open-next/
+.wrangler/
+.env
+.dev.vars
+*.tsbuildinfo
+
+# Local secrets and generated runtime data
+.env.*
+!.env.example
+.dev.vars.*
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+.DS_Store
+.playwright-cli/
+output/playwright/
+.worktrees/
+
+# Per-install configuration and test/deployment output
+wrangler.install.jsonc
+artifacts/
+*.log

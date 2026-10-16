@@ -1,0 +1,9 @@
+.response-privacy-actions { padding: 1.25rem; margin-bottom: 1.5rem; border: 1px solid var(--theme-elevation-200); border-radius: var(--style-radius-s); background: var(--theme-elevation-50); }
+.response-privacy-actions h3 { margin-top: 0; }
+.response-privacy-actions__fields { display: grid; gap: .75rem; border: 0; padding: 0; min-width: 0; }
+.response-privacy-actions__fields legend { margin-bottom: .75rem; font-weight: 600; }
+.response-privacy-actions__fields input[type=text], .response-privacy-actions__fields select { width: 100%; min-width: 0; padding: .75rem; border: 1px solid var(--theme-elevation-200); border-radius: var(--style-radius-s); background: var(--theme-input-bg); color: var(--theme-text); font: inherit; }
+.response-privacy-actions__checkbox { display: flex; align-items: flex-start; gap: .75rem; }
+.response-privacy-actions__checkbox input { flex-shrink: 0; margin-top: .25rem; }
+.response-privacy-actions__fields .btn { justify-self: start; margin: .25rem 0; }
+.response-privacy-actions input:focus-visible, .response-privacy-actions select:focus-visible, .response-privacy-actions a:focus-visible { outline: 2px solid var(--theme-elevation-800); outline-offset: 2px; }

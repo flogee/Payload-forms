@@ -1,0 +1,14 @@
+.survey-editor__guide { margin-bottom: calc(var(--base) * 1.5); }
+.survey-editor__guide p { max-width: 72ch; margin: 0 0 calc(var(--base) / 2); }
+.survey-editor__guide summary { cursor: pointer; width: fit-content; max-width: 100%; }
+.survey-editor__guide summary:hover { text-decoration: underline; text-underline-offset: .15em; }
+.survey-editor__guide summary:focus-visible { outline: 2px solid var(--theme-elevation-800); outline-offset: 3px; }
+.survey-editor__formats { margin: var(--base) 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: var(--base); }
+.survey-editor__formats dt { font-weight: 600; }
+.survey-editor__formats dd { margin: calc(var(--base) / 4) 0 0; max-width: 65ch; }
+.survey-editor__row-label { display: flex; flex-direction: column; min-width: 0; line-height: 1.45; gap: calc(var(--base) / 8); }
+.survey-editor__row-title { overflow-wrap: anywhere; }
+.survey-editor__row-detail { font-size: .875rem; overflow-wrap: anywhere; }
+/* Full labels wrap, including on narrow screens; no title or code is hidden. */
+.survey-editor__outline .array-field__row-header,
+.survey-editor__content .blocks-field__block-header { min-width: 0; }
