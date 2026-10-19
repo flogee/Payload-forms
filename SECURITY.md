@@ -24,6 +24,21 @@ Warnings start at 80 percent and at blocking thresholds. Use the operator's veri
 
 These budgets do not cap account-wide billing, other projects, direct provider access, Worker invocation costs or all D1 costs. Verify current provider quotas, shared account usage and overage rules before enabling a deployment. Provider budget alerts are not hard spending limits. Never automatically raise limits or enable paid overage.
 
+The **default-disabled, unreleased QA machine prototype** additionally reserves
+at most 500 command attempts/50 report attempts per client and 2,000/200 for the
+installation per UTC month. Reports consume both counters atomically before
+application reads; failed or uncertain work is not refunded. Fixed limits are
+not environment overrides. Existing rate bindings use independent machine keys;
+they are approximate/per-location, not accurate accounting. Invalid commands
+can still consume Worker/rate usage, and monthly rejected calls still incur
+bounded reservation/alert checks. These are accepted-work caps, not a D1/CPU or
+account-wide spend cap. Preserve stable client keys across credential rotation.
+Scoped 80%/blocked alerts share the existing bounded mail reserve and protected
+status. Queueing or provider acceptance does not guarantee timely inbox delivery.
+Failed rate-alert capture returns a sanitized failure and is not repeatedly
+written by the same isolate/month; later blocked calls retain that failure.
+See [evaluation-run boundaries](EVALUATION-RUNS.md#local-machine-guards-and-offline-access-inventory).
+
 ## Data handling and recovery
 
 Only fictional-data pretests are enabled. The sample is synthetic and is not an original research instrument. Published questionnaire/privacy versions are frozen; contacts are stored separately. Exports and reports need team authorization and may require additional privacy review before sharing.

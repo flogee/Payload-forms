@@ -22,7 +22,7 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
 
 // Keep inherited deployment settings and credentials out of all local subprocesses.
 const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
-  !/^(CLOUDFLARE_|CF_|FORMS_|ACCESS_|PAYLOAD_|MAIL_|OPS_ALERT_|PROTOTYPE_ADMIN_|LOCAL_PROTOTYPE$|DISABLE_SCHEMA_PUSH$|SURVEY_ORIGINS?$|TEST_BASE_URL$|TEST_SECOND_ORIGIN$|TEST_SCHEDULED$|NODE_ENV$)/.test(key),
+  !/^(CLOUDFLARE_|CF_|FORMS_|ACCESS_|QA_MACHINE_|PAYLOAD_|MAIL_|OPS_ALERT_|PROTOTYPE_ADMIN_|LOCAL_PROTOTYPE$|DISABLE_SCHEMA_PUSH$|SURVEY_ORIGINS?$|TEST_BASE_URL$|TEST_SECOND_ORIGIN$|TEST_SCHEDULED$|NODE_ENV$)/.test(key),
 ))
 
 async function copySource(destination) {

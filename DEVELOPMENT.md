@@ -43,3 +43,26 @@ Dependency/security updates follow the same path; passing CI alone does not inst
 The public repository currently has code CI and tagged source releases. Each operator supplies their own deployment process; this repository does not provide an automatic bridge to a private installation. A bridge must be implemented and verified separately before claiming that public releases update an installation.
 
 Existing installations must first review configuration mappings, migration history, authentication/password compatibility, stable secrets, image references and recovery. Preserve their questionnaires, accounts, submissions and budget reservations. First-install bootstrap is not an upgrade procedure.
+
+## Prepared compatibility boundary (not a deployment)
+
+The local QA prototype is not a selected or published application release.
+A private preparation must verify both a release tag and its full commit, then
+test/build those exact committed bytes; a dirty worktree is not a release pin.
+No public CI job receives installation credentials.
+
+The fixed-parameter legacy `scrypt-soze-v1-n32768-r8-p3:` hash is verified with
+the same N/r/p/key length as the current format. Successful password verification
+may request rehash; no account, enabled flag or stored hash is rewritten by
+installation. Access/team authorization remains separate. The postinstall
+verifier accepts only exact upstream/current or explicitly reviewed prior patch
+bytes, never an arbitrary modified authentication module.
+
+This preparation accepts an absent QA flag or explicit `QA_MACHINE_ENABLED=0`.
+Production child environments force it off and discard inherited machine
+credentials/configuration. Enabling it or supplying machine audiences/clients
+still fails installation validation. The existing Access inventory guard is
+unchanged. A separate pure offline QA inventory validator and local atomic
+client/installation budgets now supplement the prototype. They do not alter
+that guard or enable the feature. Reviewed release wiring, actual ingress,
+portable Run export/recovery and real-data acceptance remain separate work.

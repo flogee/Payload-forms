@@ -70,6 +70,7 @@ export interface Config {
   collections: {
     users: User;
     surveys: Survey;
+    'evaluation-runs': EvaluationRun;
     responses: Response;
     'response-contacts': ResponseContact;
     'response-erasure-logs': ResponseErasureLog;
@@ -79,6 +80,7 @@ export interface Config {
     'image-storage-usage': ImageStorageUsage;
     'image-request-usage': ImageRequestUsage;
     'public-request-usage': PublicRequestUsage;
+    'qa-machine-usage': QaMachineUsage;
     'budget-alerts': BudgetAlert;
     'budget-alert-monitor': BudgetAlertMonitor;
     'retention-reminders': RetentionReminder;
@@ -94,6 +96,7 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     surveys: SurveysSelect<false> | SurveysSelect<true>;
+    'evaluation-runs': EvaluationRunsSelect<false> | EvaluationRunsSelect<true>;
     responses: ResponsesSelect<false> | ResponsesSelect<true>;
     'response-contacts': ResponseContactsSelect<false> | ResponseContactsSelect<true>;
     'response-erasure-logs': ResponseErasureLogsSelect<false> | ResponseErasureLogsSelect<true>;
@@ -103,6 +106,7 @@ export interface Config {
     'image-storage-usage': ImageStorageUsageSelect<false> | ImageStorageUsageSelect<true>;
     'image-request-usage': ImageRequestUsageSelect<false> | ImageRequestUsageSelect<true>;
     'public-request-usage': PublicRequestUsageSelect<false> | PublicRequestUsageSelect<true>;
+    'qa-machine-usage': QaMachineUsageSelect<false> | QaMachineUsageSelect<true>;
     'budget-alerts': BudgetAlertsSelect<false> | BudgetAlertsSelect<true>;
     'budget-alert-monitor': BudgetAlertMonitorSelect<false> | BudgetAlertMonitorSelect<true>;
     'retention-reminders': RetentionRemindersSelect<false> | RetentionRemindersSelect<true>;
@@ -452,12 +456,38 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "evaluation-runs".
+ */
+export interface EvaluationRun {
+  id: number;
+  key: string;
+  contextRef: string;
+  integrationClient?: string | null;
+  survey: number | Survey;
+  version: string;
+  instrument:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  status: 'open' | 'closed';
+  expiresAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "responses".
  */
 export interface Response {
   id: number;
   submissionKey: string;
   survey: number | Survey;
+  evaluationRun?: (number | null) | EvaluationRun;
   version: string;
   testOnly: boolean;
   /**
@@ -610,12 +640,35 @@ export interface PublicRequestUsage {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "qa-machine-usage".
+ */
+export interface QaMachineUsage {
+  id: number;
+  scope: string;
+  month: string;
+  requests: number;
+  reports: number;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "budget-alerts".
  */
 export interface BudgetAlert {
   id: number;
   alertKey: string;
-  metric: 'storage' | 'objects' | 'reads' | 'writes' | 'mail' | 'participation' | 'submissions' | 'rate';
+  metric:
+    | 'storage'
+    | 'objects'
+    | 'reads'
+    | 'writes'
+    | 'mail'
+    | 'participation'
+    | 'submissions'
+    | 'rate'
+    | 'qaRequests'
+    | 'qaReports'
+    | 'qaRate';
+  scope: string;
   period: string;
   level: 'warning' | 'blocked';
   used: number;
@@ -785,6 +838,10 @@ export interface PayloadLockedDocument {
         value: number | Survey;
       } | null)
     | ({
+        relationTo: 'evaluation-runs';
+        value: number | EvaluationRun;
+      } | null)
+    | ({
         relationTo: 'responses';
         value: number | Response;
       } | null)
@@ -819,6 +876,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'public-request-usage';
         value: number | PublicRequestUsage;
+      } | null)
+    | ({
+        relationTo: 'qa-machine-usage';
+        value: number | QaMachineUsage;
       } | null)
     | ({
         relationTo: 'budget-alerts';
@@ -1068,11 +1129,28 @@ export interface SurveysSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "evaluation-runs_select".
+ */
+export interface EvaluationRunsSelect<T extends boolean = true> {
+  key?: T;
+  contextRef?: T;
+  integrationClient?: T;
+  survey?: T;
+  version?: T;
+  instrument?: T;
+  status?: T;
+  expiresAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "responses_select".
  */
 export interface ResponsesSelect<T extends boolean = true> {
   submissionKey?: T;
   survey?: T;
+  evaluationRun?: T;
   version?: T;
   testOnly?: T;
   durationSeconds?: T;
@@ -1189,11 +1267,22 @@ export interface PublicRequestUsageSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "qa-machine-usage_select".
+ */
+export interface QaMachineUsageSelect<T extends boolean = true> {
+  scope?: T;
+  month?: T;
+  requests?: T;
+  reports?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "budget-alerts_select".
  */
 export interface BudgetAlertsSelect<T extends boolean = true> {
   alertKey?: T;
   metric?: T;
+  scope?: T;
   period?: T;
   level?: T;
   used?: T;

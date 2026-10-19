@@ -9,11 +9,13 @@ import { digest, erasureKey, privacyHash } from '@/survey/privacy-crypto'
 import { saveSubmission, responseDatabase } from '@/survey/response-store'
 import { mailPolicy, readNotificationSettings } from '@/survey/notifications'
 import { boundedBody, BodyTooLarge } from '@/survey/bounded-body'
+import { authorizedEvaluationRun, EvaluationRunError, runCredentialSchema } from '@/survey/evaluation-runs'
 const requestSchema = z.object({
   surveyID: z.number().int().positive(), version: z.string().max(100), submissionID: z.string().uuid(),
   confirmTest: z.literal(true), durationSeconds: z.number().int().min(0).max(86400), answers: z.record(z.unknown()), website: z.literal('').optional(),
   privacy: z.object({ noticeHash: z.string().regex(/^[a-f0-9]{64}$/), consent: z.boolean(), contactConsent: z.boolean() }).strict().optional(),
   contact: participantContactSchema.optional(),
+  evaluationRun: runCredentialSchema.optional(),
 }).strict()
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
 export async function POST(req: Request) {
@@ -31,6 +33,13 @@ export async function POST(req: Request) {
   const survey = await payload.findByID({ collection: 'surveys', id: input.surveyID, depth: 0 }).catch((): null => null)
   if (!survey || survey.phase !== 'pretest') return json({ error: 'Diese Testbefragung ist geschlossen.' }, 403)
   if (survey.version !== input.version) return json({ error: 'Die Fragebogenfassung wurde geändert. Bitte lade die Seite neu.' }, 409)
+  let run: Awaited<ReturnType<typeof authorizedEvaluationRun>> | undefined
+  if (input.evaluationRun) {
+    try {
+      run = await authorizedEvaluationRun(responseDatabase(payload), input.evaluationRun, 'participate', payload.secret, new Date(), { allowExpiredReceipt: true })
+      if (run.survey_id !== survey.id || run.version !== survey.version) throw new EvaluationRunError(404, 'Durchlauf nicht verfügbar.')
+    } catch (error) { return json({ error: error instanceof EvaluationRunError ? error.message : 'Durchlauf derzeit nicht verfügbar.' }, error instanceof EvaluationRunError ? error.status : 503) }
+  }
   const definition = fromStored(survey), validated = validateAnswers(definition, input.answers)
   if (Object.keys(validated.errors).length) return json({ error: 'Bitte die markierten Angaben prüfen.', fields: validated.errors }, 400)
   const settings = readPrivacySettings(survey.privacy), notice = privacyNotice(settings)
@@ -46,17 +55,18 @@ export async function POST(req: Request) {
     catch (error) { return json({ error: error instanceof Error ? error.message : 'Kontaktangaben konnten nicht geprüft werden.' }, 400) }
     receipt = { notice, noticeHash: hash, recordedAt: new Date().toISOString(), consent: input.privacy.consent, contactConsent: input.privacy.contactConsent }
   }
-  const submissionKey = `${survey.id}:${survey.version}:${input.submissionID}`
+  const submissionKey = `${survey.id}:${survey.version}:${run ? `${run.key}:` : ''}${input.submissionID}`
   const notifications = readNotificationSettings(survey.notifications)
   const mail = mailPolicy({ ...cloudflareEnvironment, ...process.env })
   try {
     const saved = await saveSubmission(responseDatabase(payload), {
       key: submissionKey, erasureKey: erasureKey(submissionKey, payload.secret), surveyID: survey.id, version: survey.version,
-      digest: digest({ version: survey.version, answers: validated.answers,
+      digest: digest({ version: survey.version, evaluationRun: run?.key, answers: validated.answers,
         noticeHash: receipt?.noticeHash, consent: receipt?.consent, contactConsent: receipt?.contactConsent, contact }),
       durationSeconds: input.durationSeconds, answers: validated.answers, instrument: definition, receipt, contact,
       now: new Date().toISOString(),
       retentionYears: settings.enabled ? settings.retentionYears : 0,
+      ...(run ? { evaluationRun: { id: run.id, key: run.key } } : {}),
       notificationRecipients: notifications.enabled && mail.configured ? notifications.recipients : [],
     })
     if (saved.state === 'erased') return json({ error: 'Diese Antwort wurde gelöscht. Ein erneuter Netzwerkversuch kann sie nicht wiederherstellen.' }, 410)

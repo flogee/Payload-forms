@@ -5,6 +5,9 @@ import { password } from '../../../fields/validations.js';
 // OWASP scrypt profile: 32 MiB, N=2^15, r=8, p=3. Use the same
 // parameters on Node and Workers; the format identifies them explicitly.
 const currentPasswordHashPrefix = 'scrypt-payload-forms-v1-n32768-r8-p3:';
+// Recognize the identical, fixed-parameter format used before extraction.
+// Verify in place; only a successful password login may request a new hash.
+const compatibleScryptPrefixes = [currentPasswordHashPrefix, 'scrypt-soze-v1-n32768-r8-p3:'];
 const pbkdf2PasswordHashPrefix = 'pbkdf2-sha256-v1:';
 const scryptOptions = { N: 32768, r: 8, p: 3, maxmem: 64 * 1024 * 1024 };
 
@@ -31,8 +34,9 @@ export const generatePasswordSaltHash = async ({ collection, isPasswordAuthentic
 
 export const getPasswordHashParameters = (hash) => {
     if (typeof hash !== 'string') throw new Error('Invalid password hash format');
-    if (hash.startsWith(currentPasswordHashPrefix)) {
-        const value = hash.slice(currentPasswordHashPrefix.length);
+    const scryptPrefix = compatibleScryptPrefixes.find((prefix) => hash.startsWith(prefix));
+    if (scryptPrefix) {
+        const value = hash.slice(scryptPrefix.length);
         if (!/^[a-f0-9]{64}$/i.test(value)) throw new Error('Invalid password hash format');
         return { hash: value, algorithm: 'scrypt', iterations: 0, keyLength: 32 };
     }

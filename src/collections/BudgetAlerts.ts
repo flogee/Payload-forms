@@ -12,7 +12,8 @@ const protectedState = {
 export const BudgetAlerts: CollectionConfig = {
   ...protectedState, slug: 'budget-alerts', fields: [
     { name: 'alertKey', type: 'text', required: true, unique: true },
-    { name: 'metric', type: 'select', required: true, options: ['storage', 'objects', 'reads', 'writes', 'mail', 'participation', 'submissions', 'rate'] },
+    { name: 'metric', type: 'select', required: true, options: ['storage', 'objects', 'reads', 'writes', 'mail', 'participation', 'submissions', 'rate', 'qaRequests', 'qaReports', 'qaRate'] },
+    { name: 'scope', type: 'text', required: true, defaultValue: '' },
     { name: 'period', type: 'text', required: true },
     { name: 'level', type: 'select', required: true, options: ['warning', 'blocked'] },
     { name: 'used', type: 'number', required: true, min: 0 },

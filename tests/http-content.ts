@@ -5,6 +5,7 @@ import { sample } from '../src/survey/sample'
 import { toStored } from '../src/survey/storage'
 import { parseRichTextContent } from '../src/survey/content'
 import { IMAGE_LIMITS } from '../src/survey/image-budget'
+import { QA_MACHINE_LIMITS } from '../src/survey/qa-machine-limits'
 import { testText } from './content-fixture'
 
 export async function checkContentHTTP(base: string, token: string, apiKey: string) {
@@ -17,7 +18,8 @@ export async function checkContentHTTP(base: string, token: string, apiKey: stri
   const budgetPath = '/api/survey/media/status'
   await status(request(budgetPath), 401, 'image quotas require team login')
   await status(request(budgetPath, { headers: mcp }), 401, 'MCP keys cannot access image quotas')
-  for (const collection of ['image-storage-usage', 'image-request-usage', 'budget-alerts', 'budget-alert-monitor']) {
+  await status(request(`/api/survey/runs/export?key=${randomUUID()}`, { headers: mcp }), 401, 'MCP keys cannot read raw Run exports')
+  for (const collection of ['image-storage-usage', 'image-request-usage', 'qa-machine-usage', 'budget-alerts', 'budget-alert-monitor']) {
     await status(request(`/api/${collection}`, { headers: auth }), 403, 'team cannot edit quota collections')
     await status(json(`/api/${collection}/1`, { reservedBytes: 0, reads: 0 }, 'PATCH'), 403, 'quota reset is forbidden')
   }
@@ -53,6 +55,10 @@ export async function checkContentHTTP(base: string, token: string, apiKey: stri
   const budget = await request(budgetPath, { headers: auth })
   assert.match(budget.headers.get('cache-control') || '', /no-store/)
   const info = await budget.json() as any
+  assert.equal(info.qa.enabled, false, 'ordinary installed build keeps machine QA off')
+  assert.deepEqual(info.qa.usage, [{ scope: 'installation', requests: { used: 0, limit: QA_MACHINE_LIMITS.installation.requests },
+    reports: { used: 0, limit: QA_MACHINE_LIMITS.installation.reports } }], 'protected status shows fixed QA limits without creating usage rows')
+  assert.doesNotMatch(JSON.stringify(info.qa), /accessClientID|serviceTokenID|secret/)
   assert.equal(typeof info.warnings.configured, 'boolean')
   assert.equal(typeof info.warnings.stale, 'boolean')
   assert.ok(Array.isArray(info.warnings.alerts))

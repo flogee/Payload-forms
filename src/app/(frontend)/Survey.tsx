@@ -37,7 +37,7 @@ function Field({ q, value, onChange, error }: { q: Question; value?: Answer; onC
   }
   return <fieldset className={`question ${error ? 'invalid' : ''}`} aria-describedby={[q.help ? `${id}-help` : '', error ? `${id}-error` : ''].filter(Boolean).join(' ') || undefined}><legend><span className="question-code">{q.block}</span>{q.label}{q.optional && <span className="optional">optional</span>}</legend>{q.help && <p id={`${id}-help`} className="help">{q.help}</p>}{input}{error && <p id={`${id}-error`} className="error" role="alert">{error}</p>}</fieldset>
 }
-export function Survey({ definition, branding = { mode: 'default' }, surveyID, title = 'Fictional sample questionnaire', homeURL, privacy, privacyHash }: { definition: Definition; branding?: SurveyBranding; surveyID: number; title?: string; homeURL: string; privacy?: Notice; privacyHash?: string }) {
+export function Survey({ definition, branding = { mode: 'default' }, surveyID, title = 'Fictional sample questionnaire', homeURL, privacy, privacyHash, evaluationRun }: { definition: Definition; branding?: SurveyBranding; surveyID: number; title?: string; homeURL: string; privacy?: Notice; privacyHash?: string; evaluationRun?: { key: string; token: string } }) {
   const [step, setStep] = useState(-1), [answers, setAnswers] = useState<Answers>({}), [errors, setErrors] = useState<Record<string, string>>({}), [confirm, setConfirm] = useState(false), [busy, setBusy] = useState(false), [saved, setSaved] = useState(false), [message, setMessage] = useState('')
   const [consent, setConsent] = useState(false), [contactConsent, setContactConsent] = useState(false), [contact, setContact] = useState<Partial<ParticipantContact>>({})
   const started = useRef(0), submission = useRef(''), heading = useRef<HTMLHeadingElement>(null)
@@ -59,6 +59,7 @@ export function Survey({ definition, branding = { mode: 'default' }, surveyID, t
     setBusy(true); setMessage('')
     try {
       const res = await fetch('/api/survey/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ surveyID, version: definition.version, submissionID: submission.current, durationSeconds: Math.min(86400, Math.max(0, Math.round((Date.now() - started.current) / 1000))), confirmTest: confirm, answers, website: '',
+        ...(evaluationRun ? { evaluationRun } : {}),
         ...(privacy ? { privacy: { noticeHash: privacyHash, consent, contactConsent }, ...(contactConsent ? { contact } : {}) } : {}),
       }) })
       const result = await res.json() as { fields?: Record<string, string>; error?: string; saved?: boolean }

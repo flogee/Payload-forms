@@ -52,3 +52,21 @@ test('existing PBKDF2 formats verify with their original parameters and request 
     assert.equal(await authenticateLocalStrategy({ doc, password: fixture + 'wrong' }), null)
   }
 })
+
+test('legacy fixed-parameter scrypt accounts survive extraction without mutation or weaker hashing', async () => {
+  const salt = 'cd'.repeat(32)
+  const hash = 'scrypt-soze-v1-n32768-r8-p3:' + scryptSync(fixture, salt, 32,
+    { N: 32768, r: 8, p: 3, maxmem: 64 * 1024 * 1024 }).toString('hex')
+  const doc = { id: 9, hash, salt, enabled: false }
+  const before = structuredClone(doc)
+  assert.equal(isCurrentPasswordHash(hash), false)
+  assert.deepEqual(getPasswordHashParameters(hash), { hash: hash.split(':')[1], algorithm: 'scrypt', iterations: 0, keyLength: 32 })
+  assert.deepEqual(await authenticateLocalStrategy({ doc, password: fixture }), { doc, shouldUpdatePasswordHash: true })
+  assert.equal(await authenticateLocalStrategy({ doc, password: fixture + 'wrong' }), null)
+  for (const invalid of [hash.slice(0, -1), hash.replace('r8', 'r1'), hash.replace('n32768', 'n16384')]) {
+    assert.equal(await authenticateLocalStrategy({ doc: { ...doc, hash: invalid }, password: fixture }), null)
+  }
+  // This low-level password verifier does not grant team/Access eligibility.
+  // Neither verifying nor returning a rehash hint changes stored state.
+  assert.deepEqual(doc, before)
+})

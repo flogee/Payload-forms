@@ -10,6 +10,9 @@ import * as migration_20261009_101528_team_access from './20261009_101528_team_a
 import * as migration_20261009_155346_voting_fields from './20261009_155346_voting_fields';
 import * as migration_20261009_185835_survey_branding from './20261009_185835_survey_branding';
 import * as migration_20261010_211058_public_participation from './20261010_211058_public_participation';
+import * as migration_20261018_155303_evaluation_runs from './20261018_155303_evaluation_runs';
+import * as migration_20261018_170000_qa_machine_owner from './20261018_170000_qa_machine_owner';
+import * as migration_20261019_100000_qa_machine_budgets from './20261019_100000_qa_machine_budgets';
 
 export const migrations = [
   {
@@ -70,6 +73,21 @@ export const migrations = [
   {
     up: migration_20261010_211058_public_participation.up,
     down: migration_20261010_211058_public_participation.down,
-    name: '20261010_211058_public_participation'
+    name: '20261010_211058_public_participation',
+  },
+  {
+    up: migration_20261018_155303_evaluation_runs.up,
+    down: migration_20261018_155303_evaluation_runs.down,
+    name: '20261018_155303_evaluation_runs',
+  },
+  {
+    up: migration_20261018_170000_qa_machine_owner.up,
+    down: migration_20261018_170000_qa_machine_owner.down,
+    name: '20261018_170000_qa_machine_owner'
+  },
+  {
+    up: migration_20261019_100000_qa_machine_budgets.up,
+    down: migration_20261019_100000_qa_machine_budgets.down,
+    name: '20261019_100000_qa_machine_budgets',
   },
 ];
