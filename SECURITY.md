@@ -24,7 +24,7 @@ Warnings start at 80 percent and at blocking thresholds. Use the operator's veri
 
 These budgets do not cap account-wide billing, other projects, direct provider access, Worker invocation costs or all D1 costs. Verify current provider quotas, shared account usage and overage rules before enabling a deployment. Provider budget alerts are not hard spending limits. Never automatically raise limits or enable paid overage.
 
-The **default-disabled, unreleased QA machine prototype** additionally reserves
+The **default-disabled, experimental QA machine connector** additionally reserves
 at most 500 command attempts/50 report attempts per client and 2,000/200 for the
 installation per UTC month. Reports consume both counters atomically before
 application reads; failed or uncertain work is not refunded. Fixed limits are
@@ -39,7 +39,7 @@ Failed rate-alert capture returns a sanitized failure and is not repeatedly
 written by the same isolate/month; later blocked calls retain that failure.
 See [evaluation-run boundaries](EVALUATION-RUNS.md#local-machine-guards-and-offline-access-inventory).
 
-The local coordinated release draft accepts explicit machine configuration only
+The coordinated release preflight accepts explicit machine configuration only
 after offline validation. Its online reader verifies exact QA inventory before
 allowing that one overlap, with bounded bodies, manual redirects and complete
 single-page metadata; unsupported/multi-page inventories stop the release.

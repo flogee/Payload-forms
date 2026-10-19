@@ -51,7 +51,7 @@ The doctor validates offline configuration; it does not prove that remote resour
 
 The optional QA machine connector remains off unless its **complete explicit**
 nonsecret configuration is selected in `env.internal.vars`. The local
-[coordinated release draft](EVALUATION-RUNS.md#prepared-coordinated-release-wiring)
+[coordinated release preflight](EVALUATION-RUNS.md#prepared-coordinated-release-wiring)
 adds exact live Access metadata checks; it does not create an app, policy,
 token or resource, and is not an authorization to enable or deploy a pilot.
 The deployment reader also needs the provider's service-token metadata read
