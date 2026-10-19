@@ -39,6 +39,16 @@ Failed rate-alert capture returns a sanitized failure and is not repeatedly
 written by the same isolate/month; later blocked calls retain that failure.
 See [evaluation-run boundaries](EVALUATION-RUNS.md#local-machine-guards-and-offline-access-inventory).
 
+The local coordinated release draft accepts explicit machine configuration only
+after offline validation. Its online reader verifies exact QA inventory before
+allowing that one overlap, with bounded bodies, manual redirects and complete
+single-page metadata; unsupported/multi-page inventories stop the release.
+This is not a fresh ingress proof or an atomic guarantee against subsequent
+provider changes. Off with retained mappings does not require an active service
+credential, but still verifies the same narrow route/policy boundary. Disabling
+the machine endpoint never revokes already-issued participant grants: close the
+corresponding Runs separately. No rollout or real-data acceptance is implied.
+
 ## Data handling and recovery
 
 Only fictional-data pretests are enabled. The sample is synthetic and is not an original research instrument. Published questionnaire/privacy versions are frozen; contacts are stored separately. Exports and reports need team authorization and may require additional privacy review before sharing.

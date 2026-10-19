@@ -49,6 +49,16 @@ npm run build:cloudflare
 
 The doctor validates offline configuration; it does not prove that remote resources exist or that mail reached an inbox. A production build may require an authenticated provider context for local binding emulation; do not describe it as a remote deployment or apply migrations implicitly.
 
+The optional QA machine connector remains off unless its **complete explicit**
+nonsecret configuration is selected in `env.internal.vars`. The local
+[coordinated release draft](EVALUATION-RUNS.md#prepared-coordinated-release-wiring)
+adds exact live Access metadata checks; it does not create an app, policy,
+token or resource, and is not an authorization to enable or deploy a pilot.
+The deployment reader also needs the provider's service-token metadata read
+permission. Stop on missing permission or unsupported inventory; never broaden
+permissions or bypass checks automatically. Human/team and public-participation
+requirements above remain unchanged.
+
 Before a remote migration, record a fresh D1 recovery point, the existing schema/migration state and minimal aggregate counts. Maintain operator-controlled backups and test recovery with fictional disposable data. Never copy live data into this repository.
 
 For the **first explicitly authorized** release, while the whole hosts are still protected:

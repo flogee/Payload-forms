@@ -126,25 +126,81 @@ owner/context denial, outage and closure. It uses a test-double human/HTTP
 bootstrap and a synthetic service-auth edge, not a running WordPress instance.
 Real WordPress/Access ingress, release/recovery and data policies remain gates.
 
-Installation/release guards still reject activation and an overlapping service
-application. A later local compatibility step accepts only an absent machine
-flag or explicit `QA_MACHINE_ENABLED=0`; production subprocesses force it off
-and discard inherited `QA_MACHINE_*` values. The CI environment also excludes
-that namespace. The Access inventory guard is unchanged. This is not an enabled
-Service Auth configuration or a completed coordinated release.
-Enabling this feature needs a coordinated reviewed public/private release:
+The earlier compatibility step accepted only an absent machine flag or explicit
+`QA_MACHINE_ENABLED=0`. The subsequent **local, unreleased** wiring below adds
+an explicit complete selection and exact online metadata preflight; inherited
+`QA_MACHINE_*` settings remain discarded and CI excludes that namespace. The
+default example configuration is unchanged/off. This is not an enabled
+installation or a completed coordinated release.
+Enabling this feature still needs a coordinated reviewed public/private release:
 exact-path Service Auth policy, human/public route isolation, private secrets,
 acceptance of the local client/rate/budget controls described below, and recovery/data
 policy. Do not weaken the guards, add a whole-host Bypass, use a human team
 account, or introduce real responses to make this local draft run.
 
-The same compatibility step verifies the prior fixed-parameter scrypt format
+The earlier compatibility step verifies the prior fixed-parameter scrypt format
 without rewriting accounts during installation, retains disabled accounts and
 existing usage reservations in fictional upgrades, and checks the old/current
-hashes in Node and native workerd. Application source remains unpublished;
+hashes in Node and native workerd. Publication of a draft PR is not a release;
 private installation selection and upgrade acceptance are separate from these
 local checks. Real collection remains blocked. The subsequent local portable
 extract/recovery proof below does not authorize a release or remote recovery.
+
+### Prepared coordinated release wiring
+
+Local source draft only. No installation, policy or private workflow is changed.
+Generic installation and authentication requirements, fixed budgets, mail
+warnings, data ownership and fictional-data gate remain in force.
+
+To select a later authorized pilot, explicitly supply all six **nonsecret**
+variables in the selected installation's `env.internal.vars`:
+
+| Variable | Value |
+| --- | --- |
+| `QA_MACHINE_ENABLED` | Exactly `1`, or `0` with a retained complete mapping for shutdown |
+| `QA_MACHINE_APP_ID` | Dedicated application UUID, not the human/public app |
+| `QA_MACHINE_POLICY_ID` | Dedicated sole reusable Service Auth policy UUID |
+| `QA_MACHINE_AUD` | Dedicated 64-hex audience, different from the human audience |
+| `QA_MACHINE_CLIENTS` | JSON array of the existing runtime `{ key, accessClientID, surveyVersions }` objects |
+| `QA_MACHINE_SERVICE_TOKEN_IDS` | JSON object mapping each stable client `key` to its policy-selector service-token UUID |
+
+Never put a token secret in these values. The WordPress caller holds its service
+secret privately; the Worker verifies the edge-signed assertion instead. Stable
+client keys own Runs and monthly budgets; credential rotation must not create a
+new key to reset ownership or counters. Missing/partial mappings, duplicate or
+unknown JSON/configuration keys, conflicting human identities and extra secrets
+are rejected. With no mapping, absent/explicit-zero flag remains the default.
+Build environments discard ambient machine variables and retain only this
+explicitly selected configuration, together with the unchanged application key.
+
+`verifyAccess` reads current metadata through the existing fixed Cloudflare API
+origin. For a selected QA configuration it requires complete bounded inventories
+with confirmed single-page totals (at most100 entries); larger, truncated or
+unconfirmed lists stop instead of hiding later overlaps. API bodies are capped
+at1MiB and redirects are not followed. The dedicated app is removed from the
+old overlap rejection **only after** both the list and app details satisfy the
+existing exact QA validator. Human-email policies, team membership/audience,
+sole reusable policy ownership and public-participation paths/policy still run
+through their existing validators. No Allow/Bypass substitute for Service Auth.
+
+For enabled mode, configured token UUIDs must match their native client IDs and
+be unexpired/enabled/not revoked or reported leaked. Current provider metadata
+uses `expires_at` and `enabled`; historical `expires_on` is accepted only with
+consistent expiry if both are present. Other client-ID shapes or unsupported
+metadata fail closed; a real provider/ingress check is still necessary.
+See [service-token metadata](https://developers.cloudflare.com/api/resources/zero_trust/subresources/access/subresources/service_tokens/methods/list/).
+For explicit-zero with retained mappings, no active token is needed or fetched;
+the exact app/policy and all other overlap checks remain required. This allows
+a shutdown release after the dedicated credential was revoked or deleted.
+
+Offline doctor/build acceptance is not remote authorization, a policy creator,
+account-wide cost cap, live JWT/WordPress proof or a guarantee against concurrent
+provider changes. Do not use the public test suite against an installation.
+After a separately authorized pilot, close Runs through the human management
+action as well as disabling the WP view/machine flag and revoking its token.
+Neither machine shutdown nor token revocation closes existing participant links.
+Matching saved submissions may recover their existing receipt after closure;
+new answers remain rejected. Preserve schema, records and consumed budgets.
 
 ## Verification and remaining decision gates
 

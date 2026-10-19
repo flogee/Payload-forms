@@ -58,11 +58,11 @@ test('QA remains explicitly disabled and cannot inherit machine settings from a 
   assert.doesNotThrow(() => validateInstallConfig(explicit))
   for (const value of ['1', 'true', '', 0, false, null]) {
     explicit.env.internal.vars.QA_MACHINE_ENABLED = value
-    assert.throws(() => validateInstallConfig(explicit), /QA machine activation/)
+    assert.throws(() => validateInstallConfig(explicit), /QA machine configuration/)
   }
   explicit.env.internal.vars.QA_MACHINE_ENABLED = '0'
   explicit.env.internal.vars.QA_MACHINE_AUD = 'f'.repeat(64)
-  assert.throws(() => validateInstallConfig(explicit), /non-secret vars/)
+  assert.throws(() => validateInstallConfig(explicit), /QA machine configuration/)
   assert.equal(productionEnvironment(install, { PAYLOAD_SECRET: secret }, { remote: true }).QA_MACHINE_ENABLED, '0')
 })
 

@@ -5,6 +5,7 @@ import { configuredHostnames } from './public-access.mjs'
 import { verifyMailConfig, realAddress } from './check-mail-config.mjs'
 import { verifyImageConfig } from './check-image-config.mjs'
 import { verifyPublicConfig } from './check-public-config.mjs'
+import { qaMachineInstallSettings, qaMachineVariables } from './qa-machine-config.mjs'
 
 export const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const deploymentEnvironment = 'internal'
@@ -31,11 +32,9 @@ export function validateInstallConfig(config) {
   verifyMailConfig(internal)
   verifyImageConfig(internal)
   verifyPublicConfig(internal)
-  // This preparation release can make the disabled state explicit, but cannot
-  // enable the machine path before policy/budget/recovery acceptance exists.
-  if (vars.QA_MACHINE_ENABLED !== undefined && vars.QA_MACHINE_ENABLED !== '0') {
-    throw new Error('QA machine activation is not accepted by this release. Keep it disabled until the coordinated policy/budget/recovery checks exist.')
-  }
+  // Offline schema only. An authorized release separately verifies the live
+  // exact Access inventory; configuration validation never authorizes rollout.
+  const qaMachine = qaMachineInstallSettings(vars)
   if (vars.ACCESS_LOGIN_ENABLED !== '1' || vars.ACCESS_SYNC_ENABLED !== '1' ||
     !/^https:\/\/[a-z0-9-]+\.cloudflareaccess\.com$/.test(vars.ACCESS_TEAM_DOMAIN || '') || placeholder(vars.ACCESS_TEAM_DOMAIN) ||
     !uuid(vars.ACCESS_APP_ID) || !uuid(vars.ACCESS_POLICY_ID) || !/^[a-f0-9]{64}$/i.test(vars.ACCESS_AUD || '') || /^0+$/.test(vars.ACCESS_AUD) ||
@@ -48,9 +47,9 @@ export function validateInstallConfig(config) {
   const publicVars = new Set(['PUBLIC_GUARD_ENABLED', 'SURVEY_ORIGINS', 'LOCAL_PROTOTYPE', 'DISABLE_SCHEMA_PUSH',
     'MAIL_ENABLED', 'MAIL_FROM', 'MAIL_ORIGIN', 'MAIL_ALLOWED_RECIPIENTS', 'MAIL_MONTHLY_LIMIT', 'MAIL_LOCAL_TEST',
     'OPS_ALERT_RECIPIENT', 'ACCESS_LOGIN_ENABLED', 'ACCESS_TEAM_DOMAIN', 'ACCESS_AUD', 'ACCESS_SYNC_ENABLED',
-    'ACCESS_ACCOUNT_ID', 'ACCESS_APP_ID', 'ACCESS_POLICY_ID', 'ACCESS_INITIAL_EMAILS', 'RELEASE_PROBE_SLUG', 'QA_MACHINE_ENABLED'])
+    'ACCESS_ACCOUNT_ID', 'ACCESS_APP_ID', 'ACCESS_POLICY_ID', 'ACCESS_INITIAL_EMAILS', 'RELEASE_PROBE_SLUG', ...qaMachineVariables])
   if (Object.keys(vars).some(key => !publicVars.has(key))) throw new Error('Only documented non-secret vars are permitted. Secrets belong in the Worker secret store and private environment.')
-  return { internal, hostnames, database }
+  return { internal, hostnames, database, qaMachine }
 }
 
 /** @param {Record<string, string | undefined>} env */
@@ -72,8 +71,9 @@ export function productionEnvironment(install, env = process.env, { remote = fal
   }
   if (env.CLOUDFLARE_ACCOUNT_ID && env.CLOUDFLARE_ACCOUNT_ID !== install.internal.account_id) throw new Error('Selected account differs from CLOUDFLARE_ACCOUNT_ID.')
   const selected = { ...env }
+  const qaMachine = qaMachineInstallSettings(install.internal.vars)
   for (const key of Object.keys(selected)) if (/^(MAIL_|ACCESS_|QA_MACHINE_|OPS_ALERT_|SURVEY_ORIGINS?$|FORMS_LOCAL_D1_PATH$|NEXT_DEV_WRANGLER_ENV$|CLOUDFLARE_ENV$|WRANGLER_ENV$)/.test(key)) delete selected[key]
-  return { ...selected, ...install.internal.vars, QA_MACHINE_ENABLED: '0', PAYLOAD_SECRET: env.PAYLOAD_SECRET,
+  return { ...selected, ...install.internal.vars, QA_MACHINE_ENABLED: qaMachine?.enabled ? '1' : '0', PAYLOAD_SECRET: env.PAYLOAD_SECRET,
     PAYLOAD_FORMS_CONFIG: install.configPath, CLOUDFLARE_ACCOUNT_ID: install.internal.account_id,
     PAYLOAD_FORMS_ACCESS_APP_ID: install.internal.vars.ACCESS_APP_ID,
     PAYLOAD_FORMS_ALLOWED_EMAILS: install.internal.vars.ACCESS_INITIAL_EMAILS,

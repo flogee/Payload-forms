@@ -58,11 +58,12 @@ installation. Access/team authorization remains separate. The postinstall
 verifier accepts only exact upstream/current or explicitly reviewed prior patch
 bytes, never an arbitrary modified authentication module.
 
-This preparation accepts an absent QA flag or explicit `QA_MACHINE_ENABLED=0`.
-Production child environments force it off and discard inherited machine
-credentials/configuration. Enabling it or supplying machine audiences/clients
-still fails installation validation. The existing Access inventory guard is
-unchanged. A separate pure offline QA inventory validator and local atomic
-client/installation budgets now supplement the prototype. They do not alter
-that guard or enable the feature. Reviewed release wiring, actual ingress,
-portable Run export/recovery and real-data acceptance remain separate work.
+The subsequent local release-wiring draft accepts only complete explicit QA
+installation settings; absent settings remain off and inherited shell settings
+are discarded. The online preflight applies the pure exact inventory validator
+before exempting only the selected QA app from the old overlap rejection, then
+retains all human/public checks. Off with retained complete settings permits
+shutdown after token revocation without changing stable client keys or budgets.
+This uncommitted follow-up is not the already-published prototype commit or a
+released version. Actual ingress and real-data acceptance remain separate work;
+see [configuration and preflight contract](EVALUATION-RUNS.md#prepared-coordinated-release-wiring).

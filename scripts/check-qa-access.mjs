@@ -2,6 +2,7 @@ import { open } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 import { validateAccessApplications, validatePublicParticipation } from './check-access.mjs'
 import { configuredHostnames, publicParticipationName } from './public-access.mjs'
+import { parseQAJSON } from './qa-machine-config.mjs'
 
 const path = '/api/integrations/qa'
 const failure = 'QA Access offline inventory is invalid or incomplete.'
@@ -109,7 +110,7 @@ function servicePolicy(policy, policyID, tokenIDs, reusable = false) {
  * policy selector is NOT the native accessClientID used by JWT common_name.
  * now may be a Date or UTC ISO string for deterministic review/tests.
  */
-export function validateQAMachineAccessInventory(input) {
+export function validateQAMachineAccessInventory(input, { requireActiveTokens = true } = {}) {
   try {
     boundedSnapshot(input)
     keys(input, ['applications', 'applicationID', 'policyID', 'audience', 'humanApplicationID', 'humanAudience',
@@ -149,8 +150,8 @@ export function validateQAMachineAccessInventory(input) {
       check(participation)
       validatePublicParticipation(participation, undefined, input.hostnames)
     }
-    // The existing release guard intentionally still rejects a QA overlap. Only
-    // this isolated preparation excludes the explicitly checked QA application.
+    // The base overlap validator still rejects a QA app. Only this exact
+    // validation (offline or called by the online preflight) may exclude it.
     validateAccessApplications(input.applications.filter(application => application.id !== input.applicationID),
       input.humanApplicationID, input.publicApplicationID, input.hostnames)
     list(input.policies, 1, 1)
@@ -162,10 +163,14 @@ export function validateQAMachineAccessInventory(input) {
     }
     const now = own(input, 'now') ? (input.now instanceof Date ? input.now.getTime() : date(input.now) ? Date.parse(input.now) : NaN) : Date.now()
     check(Number.isFinite(now))
-    list(input.serviceTokens, 1, 100)
+    check(typeof requireActiveTokens === 'boolean')
+    list(input.serviceTokens, requireActiveTokens ? 1 : 0, 100)
     for (const token of input.serviceTokens) {
-      keys(token, ['id', 'client_id', 'expires_on', 'name', 'created_at', 'updated_at', 'duration', 'status', 'revoked'])
-      check(uuid.test(token.id) && clientID.test(token.client_id) && date(token.expires_on))
+      keys(token, ['id', 'client_id', 'expires_on', 'expires_at', 'enabled', 'name', 'created_at', 'updated_at', 'duration', 'status', 'revoked'])
+      const expiry = token.expires_at ?? token.expires_on
+      check(uuid.test(token.id) && clientID.test(token.client_id) && date(expiry))
+      check(!own(token, 'expires_at') || !own(token, 'expires_on') || Date.parse(token.expires_at) === Date.parse(token.expires_on))
+      if (own(token, 'enabled')) check(typeof token.enabled === 'boolean')
       if (own(token, 'status')) check(['active', 'expired', 'revoked'].includes(token.status))
       if (own(token, 'revoked')) check(typeof token.revoked === 'boolean')
     }
@@ -173,39 +178,13 @@ export function validateQAMachineAccessInventory(input) {
     unique(input.serviceTokens.map(token => token.client_id))
     for (const client of input.clients) {
       const token = input.serviceTokens.find(token => token.id === client.serviceTokenID)
-      check(token && token.client_id === client.accessClientID && Date.parse(token.expires_on) > now &&
+      if (!requireActiveTokens && !token) continue
+      check(token && token.client_id === client.accessClientID)
+      if (requireActiveTokens) check(Date.parse(token.expires_at ?? token.expires_on) > now && token.enabled !== false &&
         (!own(token, 'status') || token.status === 'active') && token.revoked !== true)
     }
     return { clients: input.clients.length, hosts: input.hostnames.length, path }
   } catch { throw new Error(failure) }
-}
-
-// JSON.parse intentionally uses last-key-wins semantics. Do not let a file with
-// duplicate (including escaped-equivalent) keys make an offline review ambiguous.
-function parseSnapshot(source) {
-  const parsed = JSON.parse(source)
-  const tokens = source.match(/"(?:[^"\\]|\\[\s\S])*"|[{}\[\],:]|[^\s{}\[\],:]+/g) ?? []
-  let index = 0
-  function value(depth) {
-    check(depth <= 16)
-    const token = tokens[index++]
-    if (token === '{') {
-      const seen = new Set()
-      if (tokens[index] !== '}') do {
-        const key = JSON.parse(tokens[index++])
-        check(!seen.has(key)); seen.add(key)
-        check(tokens[index++] === ':')
-        value(depth + 1)
-      } while (tokens[index] === ',' && ++index)
-      check(tokens[index++] === '}')
-    } else if (token === '[') {
-      if (tokens[index] !== ']') do { value(depth + 1) } while (tokens[index] === ',' && ++index)
-      check(tokens[index++] === ']')
-    }
-  }
-  value(0)
-  check(index === tokens.length)
-  return parsed
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -225,7 +204,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       check(size > 0 && size <= 1024 * 1024)
       buffer = buffer.subarray(0, size)
     } finally { await file.close() }
-    const summary = validateQAMachineAccessInventory(parseSnapshot(buffer.toString('utf8')))
+    const summary = validateQAMachineAccessInventory(parseQAJSON(buffer.toString('utf8'), 1024 * 1024))
     console.log(`PASS: offline QA Access inventory (${summary.clients} clients, ${summary.hosts} hosts, ${summary.path}). No live verification performed.`)
   } catch {
     console.error(failure)
