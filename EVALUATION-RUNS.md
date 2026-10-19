@@ -47,6 +47,11 @@ sent in the POST body, never in a public link. MACs bind the application secret,
 scope, run, questionnaire/version, opaque context and expiry. Responses are
 `no-store`; participant pages use `no-referrer`.
 
+Questionnaire-header navigation retains the validated Run and participation
+grant. Its navigation URL is separate from the bare questionnaire media base;
+logo/content image paths never inherit credential query parameters. Legacy
+unscoped questionnaire navigation remains unchanged.
+
 The participation path uses the existing `/f/<slug>` page, with `run` and
 `access` query parameters. The renderer passes the validated credential to
 `/api/survey/submit` as `evaluationRun: { key, token }`. The browser cannot choose

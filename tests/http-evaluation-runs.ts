@@ -34,13 +34,28 @@ export async function checkEvaluationRunsHTTP(base: string, teamToken: string) {
   assert.ok(!html.includes(runA.reportCredential.token), 'report access never enters the participation page')
   const urlA = new URL(runA.participationPath, base), urlB = new URL(runB.participationPath, base)
   const credentialA = { key: a.key, token: urlA.searchParams.get('access')! }, credentialB = { key: b.key, token: urlB.searchParams.get('access')! }
+  const headerURL = (markup: string) => {
+    const href = /<a\b[^>]*href="([^"]+)"[^>]*aria-label="[^"]*Fragebogen Startseite"/.exec(markup)?.[1]
+    assert.ok(href, 'the visible questionnaire-home link is rendered')
+    return new URL(href.replaceAll('&amp;', '&'), base)
+  }
+  const header = headerURL(html)
+  assert.equal(header.href, urlA.href, 'header navigation preserves exactly this Run and participation grant')
+  const reopened = await request(header.pathname + header.search)
+  assert.equal(reopened.status, 200)
+  assert.equal(headerURL(await reopened.text()).href, urlA.href, 'a reload cannot drop the Run on the next header click')
+  assert.equal((await json(`/api/surveys/${survey.id}`, { branding: { mode: 'text', text: 'Fictional scoped header' } }, teamToken, 'PATCH')).status, 200)
+  const branded = await request(runA.participationPath)
+  assert.equal(branded.status, 200)
+  assert.equal(headerURL(await branded.text()).href, urlA.href, 'custom branding retains the same scoped navigation')
+  const credentialAfterHeader = { key: header.searchParams.get('run')!, token: header.searchParams.get('access')! }
   const wrongPage = `${urlA.pathname}?run=${b.key}&access=${credentialA.token}`
   assert.equal((await request(wrongPage)).status, 404, 'a wrong run grant never falls back to unscoped participation')
   const submission = (evaluationRun: typeof credentialA, rating: number, submissionID = randomUUID()) => ({
     surveyID: survey.id, version, submissionID, confirmTest: true, durationSeconds: 1,
     answers: { RATING: rating, COMMENT: `private-comment-${evaluationRun.key}` }, evaluationRun,
   })
-  const first = submission(credentialA, 5)
+  const first = submission(credentialAfterHeader, 5)
   // Discard the first result, as after a lost acknowledgement; retry the same ID.
   const saved = await json('/api/survey/submit', first)
   assert.equal(saved.status, 201); await saved.body?.cancel()
@@ -95,6 +110,8 @@ export async function checkEvaluationRunsHTTP(base: string, teamToken: string) {
   assert.equal(details.participationPath, null)
   assert.equal((await json('/api/survey/runs/report', details.reportCredential)).status, 200, 'closed runs remain reportable')
   assert.equal((await request(runB.participationPath)).status, 200, 'closing A does not close B or the common instrument')
-  assert.equal((await request('/f/sample')).status, 200, 'legacy participation remains available')
-  console.log('PASS: two evaluation runs, native concurrent ensure, scoped grants/reports, lost-ack retry, frozen version, closure and legacy isolation')
+  const legacyPage = await request('/f/sample')
+  assert.equal(legacyPage.status, 200, 'legacy participation remains available')
+  assert.equal(headerURL(await legacyPage.text()).href, new URL('/f/sample', base).href, 'legacy header navigation stays unscoped')
+  console.log('PASS: two evaluation runs, Run-preserving header navigation/submission, native concurrent ensure, scoped grants/reports, lost-ack retry, frozen version, closure and legacy isolation')
 }

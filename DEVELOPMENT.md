@@ -64,6 +64,6 @@ are discarded. The online preflight applies the pure exact inventory validator
 before exempting only the selected QA app from the old overlap rejection, then
 retains all human/public checks. Off with retained complete settings permits
 shutdown after token revocation without changing stable client keys or budgets.
-This uncommitted follow-up is not the already-published prototype commit or a
-released version. Actual ingress and real-data acceptance remain separate work;
+This guarded prototype is not an enabled installation. A tagged source release
+does not prove actual ingress or real-data acceptance; both remain separate work;
 see [configuration and preflight contract](EVALUATION-RUNS.md#prepared-coordinated-release-wiring).
