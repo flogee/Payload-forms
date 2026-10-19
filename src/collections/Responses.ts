@@ -7,6 +7,7 @@ export const Responses: CollectionConfig = {
   fields: [
     { name: 'submissionKey', type: 'text', unique: true, required: true },
     { name: 'survey', type: 'relationship', relationTo: 'surveys', required: true },
+    { name: 'evaluationRun', type: 'relationship', relationTo: 'evaluation-runs', index: true },
     { name: 'version', type: 'text', required: true },
     { name: 'testOnly', type: 'checkbox', required: true },
     { name: 'durationSeconds', type: 'number', min: 0, max: 86400, admin: { description: 'Vom Browser gemeldete Bearbeitungsdauer, kein geprüfter Messwert.' } },

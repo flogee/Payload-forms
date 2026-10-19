@@ -12,6 +12,37 @@ import { up as alerts } from '../src/migrations/20261007_155505_budget_alerts'
 import { up as retention, down as retentionDown } from '../src/migrations/20261008_133131_retention_reminders'
 import { migrations } from '../src/migrations'
 
+test('evaluation-run upgrade preserves legacy instruments, responses, contacts and usage reservations', async () => {
+  const sqlite = new DatabaseSync(':memory:')
+  sqlite.exec('PRAGMA foreign_keys=ON')
+  const dialect = new SQLiteSyncDialect()
+  const args = { db: { run: async (statement: any) => sqlite.exec(dialect.sqlToQuery(statement).sql) } } as any
+  try {
+    const index = migrations.findIndex(m => m.name.endsWith('evaluation_runs'))
+    assert.ok(index > 0)
+    for (const migration of migrations.slice(0, index)) await migration.up(args)
+    sqlite.exec("INSERT INTO users(id,email,hash,salt,role,enabled) VALUES(1,'migration@localhost.invalid','fixture-hash','fixture-salt','admin',1); INSERT INTO surveys(id,title,slug,version,phase) VALUES(1,'Legacy fixture','legacy','legacy-v1','pretest'); INSERT INTO responses(id,submission_key,survey_id,version,test_only,answers,instrument) VALUES(1,'legacy-key',1,'legacy-v1',1,'{}','{}'); INSERT INTO response_contacts(id,response_id,name,email,test_only,privacy_receipt) VALUES(1,1,'Fictional','fixture@localhost.invalid',1,'{}'); INSERT INTO public_request_usage(id,month,reads,submissions) VALUES(1,'2026-10',123,45);")
+    sqlite.exec("INSERT INTO users(id,email,hash,salt,role,enabled) VALUES(2,'disabled@localhost.invalid','retained-legacy-hash','retained-salt','editor',0); INSERT INTO email_usage(id,month,attempts) VALUES(1,'2026-10',19); INSERT INTO image_request_usage(id,month,reads,writes) VALUES(1,'2026-10',21,3); UPDATE image_storage_usage SET reserved_bytes=1024,reserved_objects=2 WHERE id=1;")
+    sqlite.exec("INSERT INTO budget_alerts(alert_key,metric,period,level,used,quota_limit,status,attempts) VALUES('mail:2026-10:warning','mail','2026-10','warning',400,460,'sent',1)")
+    const tables = ['users', 'surveys', 'responses', 'response_contacts', 'public_request_usage', 'image_storage_usage', 'email_usage', 'image_request_usage', 'budget_alerts']
+    const before = Object.fromEntries(tables.map(table => [table, sqlite.prepare(`SELECT * FROM ${table}`).all()]))
+    for (const migration of migrations.slice(index)) await migration.up(args)
+    for (const table of tables) {
+      const after = sqlite.prepare(`SELECT * FROM ${table}`).all()
+      assert.equal(after.length, before[table].length)
+      for (let i = 0; i < after.length; i++) for (const [field, value] of Object.entries(before[table][i])) assert.equal(after[i][field], value, `${table}.${field}`)
+    }
+    assert.equal(sqlite.prepare('SELECT evaluation_run_id FROM responses').get()?.evaluation_run_id, null)
+    assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM evaluation_runs').get()?.n, 0)
+    assert.ok(sqlite.prepare('PRAGMA table_info(evaluation_runs)').all().some(row => row.name === 'integration_client'))
+    assert.equal(sqlite.prepare('SELECT scope FROM budget_alerts').get()?.scope, '')
+    assert.equal(sqlite.prepare('SELECT count(*) n FROM qa_machine_usage').get()?.n, 0)
+    assert.deepEqual(sqlite.prepare('PRAGMA foreign_key_check').all(), [])
+    await assert.rejects(migrations[index].down(args), /Rückbau.*gesperrt/)
+    assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM responses').get()?.n, 1)
+  } finally { sqlite.close() }
+})
+
 test('voting migration adds nullable settings without changing started questions or responses', async () => {
   const sqlite = new DatabaseSync(':memory:')
   sqlite.exec('PRAGMA foreign_keys=ON')

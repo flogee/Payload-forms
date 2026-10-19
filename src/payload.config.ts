@@ -12,6 +12,7 @@ import { configureUsers, staff } from './collections/Users'
 import { TeamAccessMonitor } from './collections/TeamAccessMonitor'
 import { Surveys } from './collections/Surveys'
 import { Responses } from './collections/Responses'
+import { EvaluationRuns } from './collections/EvaluationRuns'
 import { ResponseContacts } from './collections/ResponseContacts'
 import { ResponseErasureLogs } from './collections/ResponseErasureLogs'
 import { ResponseNotifications } from './collections/ResponseNotifications'
@@ -21,6 +22,7 @@ import { BudgetAlerts, BudgetAlertMonitor } from './collections/BudgetAlerts'
 import { RetentionReminders, RetentionReminderMonitor } from './collections/RetentionReminders'
 import { ImageStorageUsage, ImageRequestUsage } from './collections/ImageBudgets'
 import { PublicRequestUsage } from './collections/PublicRequestUsage'
+import { QAMachineUsage } from './collections/QAMachineUsage'
 import { budgetedImageBucket, IMAGE_PREFIX, IMAGE_LIMITS } from './survey/image-budget'
 import { sample } from './survey/sample'
 import { toStored } from './survey/storage'
@@ -73,7 +75,7 @@ export default buildConfig({
       logout: { Button: '/components/AccessLogout#AccessLogout' },
       beforeLogin: [{ path: '/components/AccessLoginHelp#AccessLoginHelp', serverProps: { enabled: cloudflare.env.ACCESS_LOGIN_ENABLED === '1' } }],
     } },
-  collections: [configureUsers(cloudflare.env), Surveys, Responses, ResponseContacts, ResponseErasureLogs, ResponseNotifications, EmailUsage, Media, ImageStorageUsage, ImageRequestUsage, PublicRequestUsage, BudgetAlerts, BudgetAlertMonitor, RetentionReminders, RetentionReminderMonitor, TeamAccessMonitor], editor: lexicalEditor(), graphQL: { disable: true },
+  collections: [configureUsers(cloudflare.env), Surveys, EvaluationRuns, Responses, ResponseContacts, ResponseErasureLogs, ResponseNotifications, EmailUsage, Media, ImageStorageUsage, ImageRequestUsage, PublicRequestUsage, QAMachineUsage, BudgetAlerts, BudgetAlertMonitor, RetentionReminders, RetentionReminderMonitor, TeamAccessMonitor], editor: lexicalEditor(), graphQL: { disable: true },
   // Payload also sends entire questionnaire edits in the multipart _payload
   // field. Keep metadata bounded without rejecting the existing Sample definition.
   upload: { limits: { fileSize: IMAGE_LIMITS.fileBytes, files: 1, fields: 10, fieldSize: 1024 * 1024 }, abortOnLimit: true },

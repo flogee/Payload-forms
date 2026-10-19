@@ -12,6 +12,10 @@ const originals = {
   'authenticate.js': '7da055edf5cf64ae4a18e6d66bbaed7584bcf954fa6a6166a8eb07711cc970fa', // gitleaks:allow -- public upstream file SHA-256, not a credential
 }
 const changes = []
+// Exact previous public patch bytes, not arbitrary already-patched code.
+const previousPublicPatch = {
+  'generatePasswordSaltHash.js': 'f64b6774d3e9af18f59d2b6842d8bf0e7538b8a9e6c80f7cc8099c6df4e08db3', // gitleaks:allow -- reviewed source SHA-256
+}
 // Verify every target before modifying any file. An unfamiliar upstream file
 // fails installation instead of silently replacing authentication code.
 for (const [name, expected] of Object.entries(originals)) {
@@ -19,7 +23,8 @@ for (const [name, expected] of Object.entries(originals)) {
   const current = await readFile(target)
   const replacement = await readFile(join(root, 'patches/payload-3.90.2-auth', name))
   if (current.equals(replacement)) continue
-  if (createHash('sha256').update(current).digest('hex') !== expected) {
+  const digest = createHash('sha256').update(current).digest('hex')
+  if (digest !== expected && digest !== previousPublicPatch[name]) {
     throw new Error(`Payload authentication source differs from the reviewed version: ${name}`)
   }
   changes.push({ target, replacement })

@@ -1,4 +1,5 @@
 import { internalHostnames, publicParticipationName, participationDestinations } from './public-access.mjs'
+import { qaMachineInstallSettings } from './qa-machine-config.mjs'
 export { internalHostnames } from './public-access.mjs'
 
 function publicDestinations(application) {
@@ -79,27 +80,62 @@ export function validateAccess(application, policies, allowedEmails, hostnames =
  */
 export async function verifyAccess(env = process.env, { databaseID, audience, policyID, hostnames = internalHostnames, request = fetch, initialSetup = false } = {}) {
   env = { ...env, FORMS_ACCESS_APP_ID: env.PAYLOAD_FORMS_ACCESS_APP_ID || env.FORMS_ACCESS_APP_ID, FORMS_ALLOWED_EMAILS: env.PAYLOAD_FORMS_ALLOWED_EMAILS || env.FORMS_ALLOWED_EMAILS, FORMS_PUBLIC_ACCESS_APP_ID: env.PAYLOAD_FORMS_PUBLIC_ACCESS_APP_ID || env.FORMS_PUBLIC_ACCESS_APP_ID }
+  const qaMachine = qaMachineInstallSettings({ ...env, ACCESS_APP_ID: env.FORMS_ACCESS_APP_ID,
+    ACCESS_POLICY_ID: policyID, ACCESS_AUD: audience })
+  if (qaMachine && (!audience || !policyID)) throw new Error('Explicit human audience and policy are required for the QA release preflight.')
   for (const name of ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID', 'FORMS_ACCESS_APP_ID', 'FORMS_ALLOWED_EMAILS']) {
     if (!env[name]) throw new Error(`${name} fehlt für die Prüfung des internen Zugangsschutzes.`)
   }
   const path = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(env.CLOUDFLARE_ACCOUNT_ID)}/access/apps/${encodeURIComponent(env.FORMS_ACCESS_APP_ID)}`
-  async function read(url) {
-    const response = await request(url, { headers: { Authorization: `Bearer ${env.CLOUDFLARE_API_TOKEN}` }, signal: AbortSignal.timeout(20000) })
+  async function read(url, completeList = false) {
+    const response = await request(url, { headers: { Authorization: `Bearer ${env.CLOUDFLARE_API_TOKEN}` }, redirect: 'manual', signal: AbortSignal.timeout(20000) })
     if (!response.ok) throw new Error(`Cloudflare Access konnte nicht geprüft werden (HTTP ${response.status}).`)
-    const data = await response.json()
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('Access-Prüfung unvollständig; Release gestoppt.')
+    let bytes = 0; const chunks = []
+    try {
+      for (;;) {
+        const { value, done } = await reader.read()
+        if (done) break
+        bytes += value.byteLength
+        if (bytes > 1024 * 1024) throw new Error('Access-Prüfung zu groß; Release gestoppt.')
+        chunks.push(value)
+      }
+    } finally { await reader.cancel() }
+    let data
+    try { data = JSON.parse(Buffer.concat(chunks).toString('utf8')) }
+    catch { throw new Error('Access-Prüfung unvollständig; Release gestoppt.') }
     if (!data.success || data.result_info?.total_pages > 1) throw new Error('Access-Prüfung unvollständig; Release gestoppt.')
+    if (completeList) {
+      const info = data.result_info
+      if (!Array.isArray(data.result) || data.result.length > 100 || !info || info.page !== 1
+        || info.total_count !== data.result.length || ![0, 1].includes(info.total_pages)
+        || (info.total_pages === 0 && data.result.length !== 0)
+        || (info.count !== undefined && info.count !== data.result.length)) {
+        throw new Error('Access-Prüfung benötigt eine vollständig bestätigte begrenzte Inventarseite; Release gestoppt.')
+      }
+    }
     return data.result
   }
   const application = await read(path)
-  const applications = await read(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(env.CLOUDFLARE_ACCOUNT_ID)}/access/apps?per_page=100`)
-  const publicApplication = validateAccessApplications(applications, env.FORMS_ACCESS_APP_ID, env.FORMS_PUBLIC_ACCESS_APP_ID, hostnames)
+  if (qaMachine && application?.id !== env.FORMS_ACCESS_APP_ID) throw new Error('Access-Team-Anwendung ist nicht eindeutig zugeordnet.')
+  const accountPath = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(env.CLOUDFLARE_ACCOUNT_ID)}`
+  const applications = await read(`${accountPath}/access/apps?per_page=100`, Boolean(qaMachine))
+  let checkedApplications = applications
+  if (qaMachine) {
+    const { verifyQAMachineRelease } = await import('./check-qa-release.mjs')
+    checkedApplications = await verifyQAMachineRelease({ settings: qaMachine, applications, humanApplication: application,
+      humanPolicyID: policyID, humanAudience: audience, publicApplicationID: env.FORMS_PUBLIC_ACCESS_APP_ID,
+      hostnames, accountPath, read })
+  }
+  const publicApplication = validateAccessApplications(checkedApplications, env.FORMS_ACCESS_APP_ID, env.FORMS_PUBLIC_ACCESS_APP_ID, hostnames)
   const policies = await read(`${path}/policies?per_page=100`)
   if (!Array.isArray(policies)) throw new Error('Access-Regeln konnten nicht vollständig gelesen werden.')
   let approvedEmails = env.FORMS_ALLOWED_EMAILS.split(',').map(email => email.trim()).filter(Boolean)
   if (databaseID) {
     const url = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(env.CLOUDFLARE_ACCOUNT_ID)}/d1/database/${encodeURIComponent(databaseID)}/query`
     async function query(sql) {
-      const response = await request(url, { method: 'POST', headers: { Authorization: `Bearer ${env.CLOUDFLARE_API_TOKEN}`, 'Content-Type': 'application/json' },
+      const response = await request(url, { method: 'POST', redirect: 'manual', headers: { Authorization: `Bearer ${env.CLOUDFLARE_API_TOKEN}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ sql }), signal: AbortSignal.timeout(20000) })
       if (!response.ok) throw new Error(`Teamfreigabe konnte nicht geprüft werden (HTTP ${response.status}).`)
       const data = await response.json()
@@ -136,5 +172,5 @@ export async function verifyAccess(env = process.env, { databaseID, audience, po
     validatePublicParticipation(publicApplication, publicPolicies, hostnames)
   }
   console.log('PASS: Cloudflare Access schützt alle konfigurierten Domains mit der freigegebenen E-Mail-Liste.')
-  return { publicParticipation: Boolean(publicApplication) }
+  return { publicParticipation: Boolean(publicApplication), ...(qaMachine ? { qaMachine: qaMachine.enabled } : {}) }
 }

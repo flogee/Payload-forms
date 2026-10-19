@@ -46,6 +46,26 @@ test('all production child processes receive the same config, stable secret and 
   assert.equal(productionEnvironment(install, { PAYLOAD_SECRET: secret }, { remote: true }).FORMS_D1_REMOTE, '1')
 })
 
+test('QA remains explicitly disabled and cannot inherit machine settings from a build shell', () => {
+  const config = installFixture()
+  const install = { ...validateInstallConfig(config), configPath: '/tmp/fixture/wrangler.install.jsonc' }
+  const env = productionEnvironment(install, { PAYLOAD_SECRET: secret, QA_MACHINE_ENABLED: '1',
+    QA_MACHINE_AUD: 'f'.repeat(64), QA_MACHINE_CLIENTS: 'stale', QA_MACHINE_UNKNOWN: 'stale' })
+  assert.equal(env.QA_MACHINE_ENABLED, '0')
+  for (const key of ['QA_MACHINE_AUD', 'QA_MACHINE_CLIENTS', 'QA_MACHINE_UNKNOWN']) assert.equal(env[key], undefined)
+  const explicit = structuredClone(config) as any
+  explicit.env.internal.vars.QA_MACHINE_ENABLED = '0'
+  assert.doesNotThrow(() => validateInstallConfig(explicit))
+  for (const value of ['1', 'true', '', 0, false, null]) {
+    explicit.env.internal.vars.QA_MACHINE_ENABLED = value
+    assert.throws(() => validateInstallConfig(explicit), /QA machine configuration/)
+  }
+  explicit.env.internal.vars.QA_MACHINE_ENABLED = '0'
+  explicit.env.internal.vars.QA_MACHINE_AUD = 'f'.repeat(64)
+  assert.throws(() => validateInstallConfig(explicit), /QA machine configuration/)
+  assert.equal(productionEnvironment(install, { PAYLOAD_SECRET: secret }, { remote: true }).QA_MACHINE_ENABLED, '0')
+})
+
 test('setup is offline, creates private local-only secrets and refuses to overwrite either install file', async () => {
   const root = await mkdtemp(join(tmpdir(), 'payload-forms-setup-'))
   try {

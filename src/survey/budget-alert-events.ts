@@ -1,4 +1,4 @@
-export type BudgetMetric = 'storage' | 'objects' | 'reads' | 'writes' | 'mail' | 'participation' | 'submissions' | 'rate'
+export type BudgetMetric = 'storage' | 'objects' | 'reads' | 'writes' | 'mail' | 'participation' | 'submissions' | 'rate' | 'qaRequests' | 'qaReports' | 'qaRate'
 export type AlertLevel = 'warning' | 'blocked'
 export const alertInsert = `INSERT INTO budget_alerts
   (alert_key, metric, period, level, used, quota_limit, status, attempts, next_attempt_at, created_at, updated_at)

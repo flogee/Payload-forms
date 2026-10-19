@@ -4,17 +4,20 @@ import { runBatch, type ResponseDatabase, type Statement } from './response-stor
 import { mailPolicy, type MailEnvironment } from './notifications'
 import { attemptMail } from './mail-attempt'
 import { PUBLIC_LIMITS } from './public-limits'
+import { qaBudgetAlerts, type QAUsage } from './qa-machine-budget'
+import { QA_MACHINE_LIMITS } from './qa-machine-limits'
 
-export const budgetLabels: Record<BudgetMetric, string> = { storage: 'Reservierter Bildspeicher', objects: 'Reservierte Bildplätze', reads: 'Bildabrufe', writes: 'Bild-Uploads', mail: 'Einsendungsbenachrichtigungen', participation: 'Öffentliche Formularabrufe', submissions: 'Öffentliche Absendeversuche', rate: 'Kurzzeitige Ratenbegrenzung' }
-type Alert = { id: number; metric: BudgetMetric; period: string; level: AlertLevel; used: number; quota_limit: number; status: string; attempts: number }
+export const budgetLabels: Record<BudgetMetric, string> = { storage: 'Reservierter Bildspeicher', objects: 'Reservierte Bildplätze', reads: 'Bildabrufe', writes: 'Bild-Uploads', mail: 'Einsendungsbenachrichtigungen', participation: 'Öffentliche Formularabrufe', submissions: 'Öffentliche Absendeversuche', rate: 'Kurzzeitige Ratenbegrenzung', qaRequests: 'QA-Maschinenaufrufe', qaReports: 'QA-Berichtsversuche', qaRate: 'QA-Kurzzeitbegrenzung' }
+type Alert = { id: number; metric: BudgetMetric; scope?: string; period: string; level: AlertLevel; used: number; quota_limit: number; status: string; attempts: number }
 
 export async function budgetSnapshot(db: ResponseDatabase, now = new Date()) {
   const month = now.toISOString().slice(0, 7)
-  const [storageResult, usageResult, emailResult, publicResult] = await runBatch(db, [
+  const [storageResult, usageResult, emailResult, publicResult, qaResult] = await runBatch(db, [
     { sql: 'SELECT reserved_bytes, reserved_objects FROM image_storage_usage WHERE id = 1', values: [] },
     { sql: 'SELECT reads, writes FROM image_request_usage WHERE month = ?', values: [month] },
     { sql: 'SELECT attempts FROM email_usage WHERE month = ?', values: [month] },
     { sql: 'SELECT reads, submissions FROM public_request_usage WHERE month = ?', values: [month] },
+    { sql: 'SELECT scope, requests, reports FROM qa_machine_usage WHERE month = ? ORDER BY scope LIMIT 65', values: [month] },
   ])
   const storage = storageResult.results[0], usage = usageResult.results[0]
   if (!storage) throw new Error('Bildkontingent ist nicht eingerichtet.')
@@ -22,11 +25,14 @@ export async function budgetSnapshot(db: ResponseDatabase, now = new Date()) {
     reads: Number(usage?.reads ?? 0), writes: Number(usage?.writes ?? 0), mail: Number(emailResult.results[0]?.attempts ?? 0),
     participation: Number(publicResult.results[0]?.reads ?? 0), submissions: Number(publicResult.results[0]?.submissions ?? 0) }
   if (Object.values(used).some(value => !Number.isSafeInteger(value) || value < 0)) throw new Error('Kontingentprüfung fehlgeschlagen.')
-  return { month, used }
+  if (qaResult.results.length > 64) throw new Error('QA-Clientinventar benötigt eine Betriebsprüfung.')
+  const qa = qaResult.results as QAUsage[]
+  qaBudgetAlerts(qa, now) // Validate bounded scopes and counters before display.
+  return { month, used, qa }
 }
 
 export async function checkBudgetAlerts(db: ResponseDatabase, env: MailEnvironment, now = new Date()) {
-  const { month, used } = await budgetSnapshot(db, now), stamp = now.toISOString(), policy = mailPolicy(env)
+  const { month, used, qa } = await budgetSnapshot(db, now), stamp = now.toISOString(), policy = mailPolicy(env)
   const limits = { storage: IMAGE_LIMITS.storageBytes, objects: IMAGE_LIMITS.objects, reads: IMAGE_LIMITS.monthlyReads, writes: IMAGE_LIMITS.monthlyWrites, mail: policy.routineLimit, participation: PUBLIC_LIMITS.reads, submissions: PUBLIC_LIMITS.submissions }
   const statements: Statement[] = [
     { sql: "UPDATE budget_alerts SET status = 'uncertain', last_error = 'UNCONFIRMED', updated_at = ? WHERE status = 'sending' AND claimed_at < ?", values: [stamp, new Date(now.getTime() - 15 * 60000).toISOString()] },
@@ -34,8 +40,9 @@ export async function checkBudgetAlerts(db: ResponseDatabase, env: MailEnvironme
     // Keep lifetime deduplication keys permanently; monthly keys are never reused.
     { sql: "DELETE FROM budget_alerts WHERE period <> 'lifetime' AND period < ?", values: [new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 3, 1)).toISOString().slice(0, 7)] },
     { sql: 'DELETE FROM public_request_usage WHERE month < ?', values: [new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 3, 1)).toISOString().slice(0, 7)] },
+    { sql: 'DELETE FROM qa_machine_usage WHERE month < ?', values: [new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 3, 1)).toISOString().slice(0, 7)] },
   ]
-  for (const metric of Object.keys(limits) as Exclude<BudgetMetric, 'rate'>[]) {
+  for (const metric of Object.keys(limits) as (keyof typeof limits)[]) {
     const limit = limits[metric]
     if (limit < 1 || used[metric] < Math.ceil(limit * 0.8)) continue
     const period = metric === 'storage' || metric === 'objects' ? 'lifetime' : month
@@ -44,8 +51,9 @@ export async function checkBudgetAlerts(db: ResponseDatabase, env: MailEnvironme
     const level = used[metric] >= limit || (metric === 'storage' && used.storage > limit - IMAGE_LIMITS.fileBytes) ? 'blocked' : 'warning'
     statements.push({ sql: alertInsert, values: [`${metric}:${period}:${level}`, metric, period, level, used[metric], limit, stamp, stamp, stamp] })
   }
+  statements.push(...qaBudgetAlerts(qa, now))
   statements.push({ sql: `UPDATE budget_alerts AS a SET status = 'superseded', updated_at = ? WHERE a.status = 'pending' AND a.level = 'warning'
-    AND EXISTS (SELECT 1 FROM budget_alerts b WHERE b.metric = a.metric AND b.period = a.period AND b.level = 'blocked')`, values: [stamp] },
+    AND EXISTS (SELECT 1 FROM budget_alerts b WHERE b.metric = a.metric AND b.scope = a.scope AND b.period = a.period AND b.level = 'blocked')`, values: [stamp] },
   { sql: 'INSERT INTO budget_alert_monitor(id, checked_at) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET checked_at = excluded.checked_at WHERE excluded.checked_at > budget_alert_monitor.checked_at', values: [stamp] })
   await runBatch(db, statements)
 }
@@ -53,8 +61,8 @@ export async function checkBudgetAlerts(db: ResponseDatabase, env: MailEnvironme
 export async function budgetAlertStatus(db: ResponseDatabase, env: MailEnvironment, now = new Date()) {
   const [monitor, alerts] = await runBatch(db, [
     { sql: 'SELECT checked_at FROM budget_alert_monitor WHERE id = 1', values: [] },
-    { sql: `SELECT metric, period, level, used, quota_limit, status, attempts, updated_at FROM budget_alerts
-      WHERE period IN ('lifetime', ?) AND status <> 'superseded' ORDER BY id DESC LIMIT 16`, values: [now.toISOString().slice(0, 7)] },
+    { sql: `SELECT metric, scope, period, level, used, quota_limit, status, attempts, updated_at FROM budget_alerts
+      WHERE period IN ('lifetime', ?) AND status <> 'superseded' ORDER BY id DESC LIMIT 64`, values: [now.toISOString().slice(0, 7)] },
   ])
   const policy = mailPolicy(env), checkedAt = monitor.results[0]?.checked_at as string | undefined
   return { recipient: policy.alertRecipient ?? null, configured: policy.configured && !!policy.alertRecipient,
@@ -62,16 +70,24 @@ export async function budgetAlertStatus(db: ResponseDatabase, env: MailEnvironme
     mailUsedLimit: policy.routineLimit, mailTotalLimit: policy.limit, alerts: alerts.results }
 }
 
-export function budgetAlertMessage(sender: string, recipient: string, origin: string, alert: Pick<Alert, 'metric' | 'level' | 'period' | 'used' | 'quota_limit'>) {
-  const label = budgetLabels[alert.metric], blocked = alert.level === 'blocked'
+export function budgetAlertMessage(sender: string, recipient: string, origin: string, alert: Pick<Alert, 'metric' | 'scope' | 'level' | 'period' | 'used' | 'quota_limit'>) {
+  const scope = alert.scope === 'installation' ? ' · gesamte Installation' : alert.scope ? ` · Client ${alert.scope}` : ''
+  const label = `${budgetLabels[alert.metric]}${scope}`, blocked = alert.level === 'blocked'
   const affected = alert.metric === 'reads' ? 'Weitere Bildabrufe pausieren bei ausgeschöpfter Quote. Bildplätze zeigen dann einen Texthinweis; der Fragebogen bleibt ausfüllbar.'
+    : alert.metric.startsWith('qa') ? 'Nur der betroffene QA-Maschinenzugriff pausiert: bei einer Clientgrenze für diesen Client, bei einer Installationsgrenze für alle QA-Clients. Eine Berichtsgrenze pausiert nur Berichtsversuche. Vorhandene Antworten, öffentliche Teilnahme, menschliche Verwaltung und Ausbildungsnachweise bleiben davon unberührt. Kurzzeitbegrenzungen erlauben einen neuen Versuch nach einer Minute; Monatsquoten erneuern sich im nächsten UTC-Monat. Bitte Ursache und Warnstatus prüfen; Grenzen nicht automatisch erhöhen.'
     : alert.metric === 'rate' ? 'Mindestens eine öffentliche Anfrage wurde vor Datenbank- und Formularzugriffen kurzzeitig begrenzt. Betroffene Teilnehmende sehen einen Hinweis und können nach einer Minute erneut versuchen. Bitte mögliche ungewöhnliche Zugriffe prüfen. Das Backend bleibt verfügbar. Diese Ereignismeldung wird je UTC-Monat einmal vorgemerkt; sie enthält keine IP-Adressen.'
     : alert.metric === 'participation' ? 'Weitere öffentliche Formular-, Datenschutz- und Bildabrufe pausieren. Das geschützte Backend, vorhandene Antworten und Absendeversuche bereits geöffneter Formulare bleiben verfügbar.'
     : alert.metric === 'submissions' ? 'Weitere öffentliche Absendeversuche pausieren. Die Angaben bleiben im geöffneten Browser erhalten; Teilnehmende sollten den Tab offen halten. Formularabrufe, das geschützte Backend und vorhandene Antworten bleiben verfügbar.'
     : alert.metric === 'mail' ? 'Neue Einsendungen werden weiterhin gespeichert. Reguläre Eingangsmails warten bei ausgeschöpfter Quote und können nach 24 Stunden verfallen.'
     : 'Mindestens ein weiterer Bild-Upload kann nicht ausgeführt werden. Bestehende Formulare und Einsendungen funktionieren weiterhin; kleinere Uploads können noch in den Restspeicher passen.'
   return { from: sender, to: recipient, subject: `Payload Forms: ${blocked ? 'Kontingent begrenzt Vorgänge' : 'Kontingentwarnung ab 80 %'} – ${label}`,
-    text: `${alert.metric === 'rate' ? `${label} wurde ausgelöst (UTC-Monat ${alert.period}).` : `${label}: ${alert.used} von ${alert.quota_limit} reservierten Einheiten (${alert.period === 'lifetime' ? 'dauerhaft' : `UTC-Monat ${alert.period}`}).`}\n\n${blocked ? affected : 'Bitte die Nutzung prüfen, bevor Vorgänge durch die feste Grenze begrenzt werden.'}\n\nGeschützte Verwaltung und Warnstatus:\n${origin}/admin/collections/media\n\nMaßnahmen: Nutzung und Ursache prüfen, weitere Uploads vorerst vermeiden bzw. bei Monatsquoten den nächsten UTC-Monat abwarten. Dauerhafte Reservierungen werden nicht automatisch freigegeben. Eine Erhöhung der Grenzen erfordert eine bewusste technische und finanzielle Prüfung.\n\nDiese App-Quoten sind keine kontoweite Kostenobergrenze für Cloudflare. Die Nachricht enthält keine Formularantworten.\n\nPayload Forms` }
+    text: `${alert.metric === 'rate' || alert.metric === 'qaRate' ? `${label} wurde ausgelöst (UTC-Monat ${alert.period}).` : `${label}: ${alert.used} von ${alert.quota_limit} reservierten Einheiten (${alert.period === 'lifetime' ? 'dauerhaft' : `UTC-Monat ${alert.period}`}).`}\n\n${blocked ? affected : 'Bitte die Nutzung prüfen, bevor Vorgänge durch die feste Grenze begrenzt werden.'}\n\nGeschützte Verwaltung und Warnstatus:\n${origin}/admin/collections/media\n\nMaßnahmen: Nutzung und Ursache prüfen, weitere Uploads vorerst vermeiden bzw. bei Monatsquoten den nächsten UTC-Monat abwarten. Dauerhafte Reservierungen werden nicht automatisch freigegeben. Eine Erhöhung der Grenzen erfordert eine bewusste technische und finanzielle Prüfung.\n\nDiese App-Quoten sind keine kontoweite Kostenobergrenze für Cloudflare. Die Nachricht enthält keine Formularantworten.\n\nPayload Forms` }
+}
+
+export function qaUsageStatus(usage: QAUsage[]) {
+  const rows = usage.some(row => row.scope === 'installation') ? usage : [{ scope: 'installation', requests: 0, reports: 0 }, ...usage]
+  return rows.map(row => ({ scope: row.scope, requests: { used: row.requests, limit: QA_MACHINE_LIMITS[row.scope === 'installation' ? 'installation' : 'client'].requests },
+    reports: { used: row.reports, limit: QA_MACHINE_LIMITS[row.scope === 'installation' ? 'installation' : 'client'].reports } }))
 }
 
 export async function dispatchBudgetAlerts(db: ResponseDatabase, env: MailEnvironment, now = new Date(), timeoutMs = 10000) {

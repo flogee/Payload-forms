@@ -13,6 +13,7 @@ import { checkTeamHTTP } from './http-team'
 import { checkSurveyToolsHTTP } from './http-survey-tools'
 import { checkAnalysisHTTP } from './http-analysis'
 import { checkVotingHTTP } from './http-voting'
+import { checkEvaluationRunsHTTP } from './http-evaluation-runs'
 const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:3212'
 const request = async (path: string, init?: RequestInit) => fetch(base + path, init)
 const json = async (path: string, data: unknown, token?: string, method = 'POST') => request(path, { method, headers: { 'Content-Type': 'application/json', Origin: base, ...(token ? { Authorization: `JWT ${token}` } : {}) }, body: JSON.stringify(data) })
@@ -61,6 +62,16 @@ if (process.env.TEST_FIRST_USER === '1') {
   token = (await freshLogin.json() as { token: string }).token
 }
 const auth = { Authorization: `JWT ${token}` }
+// Exercise the real compiled route in Next and native Worker CI. A new machine
+// endpoint must remain closed by default, including for an ordinary team user.
+for (const headers of [{}, auth]) {
+  const disabled = await request('/api/integrations/qa', {method: 'POST',
+    headers: {'Content-Type':'application/json',Origin:base,...headers},
+    body: JSON.stringify({action:'report',key:randomUUID()})})
+  assert.equal(disabled.status, 404, 'machine QA route stays disabled without explicit configuration')
+  assert.match(disabled.headers.get('cache-control')!, /no-store/)
+  assert.equal((await disabled.json() as {error:string}).error, 'Schnittstelle nicht verfügbar.')
+}
 const surveyResult = await request('/api/surveys?limit=1&where[slug][equals]=sample', { headers: auth })
 let survey = ((await surveyResult.json()) as any).docs[0]
 if (!survey && process.env.TEST_FIRST_USER === '1') {
@@ -183,6 +194,7 @@ assert.equal(demoAnalysis.minimumGroup, 5)
 assert.equal(demoAnalysis.sections[2].series[1].suppressed, true)
 assert.doesNotMatch(JSON.stringify(demoAnalysis), /Demo-Freitext|"answers"/)
 await checkAnalysisHTTP(base, token, survey.id)
+await checkEvaluationRunsHTTP(base, token)
 await checkVotingHTTP(base, token)
 const draftSlug = `mcp-test-${randomUUID()}`
 const draftInstrument = { ...fromStored(survey), version: draftSlug }

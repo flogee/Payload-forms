@@ -5,7 +5,7 @@ import { retentionReviewDueAt } from './retention-policy'
 
 export type SQLValue = string | number | null
 export type Statement = { sql: string; values: SQLValue[] }
-type StoredResponse = { id: number; submission_digest: string | null; version: string; answers: string; privacy_receipt: string | null }
+type StoredResponse = { id: number; submission_digest: string | null; version: string; answers: string; privacy_receipt: string | null; evaluation_run_id?: number | null }
 type StoredErasure = {
   response_key: string; survey_id: number; version: string; reason: ErasureReason
   erased_by_id: number; erased_at: string; retention_until: string
@@ -60,22 +60,26 @@ export type Submission = {
   receipt?: PrivacyReceipt; contact?: ParticipantContact; now: string
   notificationReference?: string; notificationRecipients?: string[]
   retentionYears?: number
+  evaluationRun?: { id: number; key: string }
 }
 
 export function submissionStatements(input: Submission): Statement[] {
   const statements: Statement[] = [{
     sql: `INSERT INTO responses
       (submission_key, survey_id, version, test_only, duration_seconds, answers, instrument,
-       privacy_receipt, submission_digest, notification_reference, retention_review_due_at, created_at, updated_at)
-      SELECT ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?
+       privacy_receipt, submission_digest, notification_reference, retention_review_due_at, created_at, updated_at${input.evaluationRun ? ', evaluation_run_id' : ''})
+      SELECT ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?${input.evaluationRun ? ', ?' : ''}
       WHERE EXISTS (SELECT 1 FROM surveys WHERE id = ? AND version = ? AND phase = 'pretest')
       AND NOT EXISTS (SELECT 1 FROM response_erasure_logs WHERE response_key = ?)
+      ${input.evaluationRun ? `AND EXISTS (SELECT 1 FROM evaluation_runs WHERE id = ? AND key = ? AND survey_id = ?
+        AND version = ? AND status = 'open' AND julianday(expires_at) > julianday(?))` : ''}
       ON CONFLICT (submission_key) DO NOTHING`,
     values: [input.key, input.surveyID, input.version, input.durationSeconds,
       JSON.stringify(input.answers), JSON.stringify(input.instrument),
       input.receipt ? JSON.stringify(input.receipt) : null, input.digest, input.notificationReference ?? null,
       retentionReviewDueAt(input.now, input.retentionYears ?? 0), input.now, input.now,
-      input.surveyID, input.version, input.erasureKey],
+      ...(input.evaluationRun ? [input.evaluationRun.id] : []), input.surveyID, input.version, input.erasureKey,
+      ...(input.evaluationRun ? [input.evaluationRun.id, input.evaluationRun.key, input.surveyID, input.version, input.now] : [])],
   }]
   if (input.contact) statements.push({
     sql: `INSERT INTO response_contacts
@@ -101,7 +105,7 @@ export function submissionStatements(input: Submission): Statement[] {
     values: [recipient, input.now, input.now, input.now, input.key, input.digest, input.notificationReference ?? null, recipient],
   })
   statements.push({
-    sql: 'SELECT id, submission_digest, version, answers, privacy_receipt FROM responses WHERE submission_key = ?', values: [input.key],
+    sql: `SELECT id, submission_digest, version, answers, privacy_receipt${input.evaluationRun ? ', evaluation_run_id' : ''} FROM responses WHERE submission_key = ?`, values: [input.key],
   }, {
     sql: 'SELECT response_key FROM response_erasure_logs WHERE response_key = ?', values: [input.erasureKey],
   })
@@ -113,6 +117,7 @@ export async function saveSubmission(db: ResponseDatabase, input: Submission) {
   const row = result[result.length - 2].results[0] as StoredResponse | undefined
   if (result[result.length - 1].results.length) return { state: 'erased' as const }
   if (!row) return { state: 'closed' as const }
+  if (input.evaluationRun && row.evaluation_run_id !== input.evaluationRun.id) return { state: 'conflict' as const }
   if (row.submission_digest !== input.digest) {
     // Pre-migration test answers have no digest. Accept only an unchanged retry
     // with the original answer payload and no newly attached privacy/contact data.

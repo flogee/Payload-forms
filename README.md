@@ -36,6 +36,10 @@ npm run test:ci
 
 The last command runs a fresh database, development HTTP tests, and a native Worker build and HTTP suite in disposable directories. It does not use a live deployment. See [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md), and the [development and release policy](DEVELOPMENT.md) for change ownership, compatibility and private installation updates.
 
+The optional [evaluation-run prototype](EVALUATION-RUNS.md) reuses one frozen
+questionnaire for independent fictional runs and scoped aggregate reports.
+It is not a deployed LMS integration or a production trainer permission system.
+
 ## Deployment and privacy
 
 Each operator supplies their own account, domains, database, private image bucket, Access policies, mail verification and warning recipient. Installation configuration and secrets remain outside version control. This repository contains no hosted service credentials, operational history, original research questionnaire, respondent records, or original deployment configuration.

@@ -43,3 +43,27 @@ Dependency/security updates follow the same path; passing CI alone does not inst
 The public repository currently has code CI and tagged source releases. Each operator supplies their own deployment process; this repository does not provide an automatic bridge to a private installation. A bridge must be implemented and verified separately before claiming that public releases update an installation.
 
 Existing installations must first review configuration mappings, migration history, authentication/password compatibility, stable secrets, image references and recovery. Preserve their questionnaires, accounts, submissions and budget reservations. First-install bootstrap is not an upgrade procedure.
+
+## Prepared compatibility boundary (not a deployment)
+
+The local QA prototype is not a selected or published application release.
+A private preparation must verify both a release tag and its full commit, then
+test/build those exact committed bytes; a dirty worktree is not a release pin.
+No public CI job receives installation credentials.
+
+The fixed-parameter legacy `scrypt-soze-v1-n32768-r8-p3:` hash is verified with
+the same N/r/p/key length as the current format. Successful password verification
+may request rehash; no account, enabled flag or stored hash is rewritten by
+installation. Access/team authorization remains separate. The postinstall
+verifier accepts only exact upstream/current or explicitly reviewed prior patch
+bytes, never an arbitrary modified authentication module.
+
+The subsequent local release-wiring draft accepts only complete explicit QA
+installation settings; absent settings remain off and inherited shell settings
+are discarded. The online preflight applies the pure exact inventory validator
+before exempting only the selected QA app from the old overlap rejection, then
+retains all human/public checks. Off with retained complete settings permits
+shutdown after token revocation without changing stable client keys or budgets.
+This guarded prototype is not an enabled installation. A tagged source release
+does not prove actual ingress or real-data acceptance; both remain separate work;
+see [configuration and preflight contract](EVALUATION-RUNS.md#prepared-coordinated-release-wiring).
