@@ -71,6 +71,34 @@ Release checks remote Access/allowlists and verified email destinations, checks 
 
 Later releases use `npm run release:cloudflare`; add `--migrate` only for reviewed pending migrations. Separate `migrate:cloudflare` and `bootstrap:cloudflare` commands are available for deliberate operations with the same validated configuration; they do not replace the release's online preflight. Do not run them on an unidentified database.
 
+For an existing installation whose stable `PAYLOAD_SECRET` is held only in the
+Worker secret store, an operator may explicitly choose:
+
+```sh
+npm run release:cloudflare -- --runtime-secret-only
+```
+
+Leave `PAYLOAD_SECRET` unset in this release process; even an empty supplied value
+is rejected. This mode verifies the existing `PAYLOAD_SECRET` and
+`ACCESS_SYNC_TOKEN` secret names before building. It never reads their values,
+creates a secret or rotates one. A fresh transient key exists only in the build
+child environment (and the reviewed migration child when explicitly requested),
+never in installation configuration, assets or logs. The deployed Worker keeps
+its existing secrets; OpenNext loads runtime bindings before importing the server.
+All Access, mail, dry-run and HTTPS checks still apply, and QA settings remain
+explicitly selected through the normal configuration validation.
+
+`--bootstrap` is forbidden in this mode. Add `--migrate` only after the normal
+backup and migration review: a fail-closed identity guard permits exactly the
+reviewed SQL-only migration files, index, Payload configuration and migration CLI
+with Payload/D1 adapter 3.90.2. Any changed, missing or new executable migration,
+configuration or supported version requires a fresh review before updating that
+guard; do not automatically regenerate its digests. A migration using Payload
+data APIs, encryption or key-dependent hooks requires the stable secret instead.
+The default release and the separate build/migrate/bootstrap commands continue
+to require the supplied stable key because arbitrary application operations may
+depend on it. This compatibility option is an existing-installation upgrade path.
+
 ## Enable anonymous participation
 
 First deploy the guards and budgets behind whole-host protection. Then, with the operator's explicit permission, create a **separate** Access self-hosted application named `Payload-forms – Teilnahme` containing exactly these four paths on **each** configured host:
