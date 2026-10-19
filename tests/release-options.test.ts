@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { projectRoot, productionEnvironment, validateInstallConfig } from '../scripts/install-config.mjs'
 import { releaseOptions, releaseEnvironments } from '../scripts/release-options.mjs'
 import { verifyTransientMigrationSources } from '../scripts/reviewed-sql-migrations.mjs'
@@ -58,6 +59,22 @@ test('explicit mode creates a fresh child-only key without mutating source envir
   assert.equal(process.env.PAYLOAD_SECRET, parentSecret)
   for (const value of ['', stable]) assert.throws(() => releaseEnvironments(selected, options, { PAYLOAD_SECRET: value }), /Unset PAYLOAD_SECRET/)
   assert.throws(() => releaseEnvironments(selected, { ...options, bootstrap: true }, {}), /cannot bootstrap/)
+})
+
+test('transient migration config is pinned despite ambient config selection', async () => {
+  const options = releaseOptions(['--runtime-secret-only','--migrate'])
+  const reviewedConfig = join(projectRoot,'src/payload.config.ts')
+  for (const path of ['', './src/payload.config.ts', '/tmp/unreviewed.config.ts']) {
+    assert.throws(() => releaseEnvironments(install(),options,{PAYLOAD_CONFIG_PATH:path}), /exact reviewed PAYLOAD_CONFIG_PATH/)
+  }
+  for (const source of [{}, {PAYLOAD_CONFIG_PATH:reviewedConfig}]) {
+    const { migration } = releaseEnvironments(install(),options,source)
+    assert.equal(migration.PAYLOAD_CONFIG_PATH,reviewedConfig)
+    const { findConfig } = await import(pathToFileURL(join(projectRoot,'node_modules/payload/dist/config/find.js')).href)
+    const previous = process.env.PAYLOAD_CONFIG_PATH
+    try { process.env.PAYLOAD_CONFIG_PATH = migration.PAYLOAD_CONFIG_PATH; assert.equal(findConfig(),reviewedConfig) }
+    finally { if (previous === undefined) delete process.env.PAYLOAD_CONFIG_PATH; else process.env.PAYLOAD_CONFIG_PATH = previous }
+  }
 })
 
 test('transient migrations fail closed on changed, missing or new executable sources and Payload versions', async () => {
