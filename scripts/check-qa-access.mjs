@@ -83,8 +83,12 @@ function exactApplication(application, id, aud, uris, policyID) {
 function servicePolicy(policy, policyID, tokenIDs, reusable = false) {
   keys(policy, ['id', 'name', 'decision', 'include', 'exclude', 'require', 'app_count', 'precedence',
     'created_at', 'updated_at', 'session_duration', 'approval_required', 'approval_groups',
-    'purpose_justification_required', 'purpose_justification_prompt', 'isolation_required'])
+    'purpose_justification_required', 'purpose_justification_prompt', 'isolation_required', 'uid', 'reusable'])
   check(policy.id === policyID && policy.decision === 'non_identity')
+  // Native assigned/reusable policy responses also carry these metadata aliases.
+  // Accept them only when they confirm, rather than contradict, the selected policy.
+  if (own(policy, 'uid')) check(policy.uid === policy.id)
+  if (own(policy, 'reusable')) check(policy.reusable === true)
   if (reusable) check(policy.app_count === 1)
   else if (own(policy, 'app_count')) check(policy.app_count === 1)
   for (const key of ['require', 'exclude', 'approval_groups']) emptyList(policy, key)

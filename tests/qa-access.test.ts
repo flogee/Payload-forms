@@ -132,6 +132,26 @@ test('sole reusable non-identity policy permits only the complete explicit UUID 
   ]) rejects(mutate)
 })
 
+test('native Access policy metadata must confirm the same ID and reusable policy', () => {
+  const input = fixture()
+  for (const policy of [input.policies[0], input.reusablePolicy]) {
+    policy.uid = policy.id
+    policy.reusable = true
+  }
+  const before = structuredClone(input)
+  assert.deepEqual(validateQAMachineAccessInventory(input), { clients: 2, hosts: 2, path: '/api/integrations/qa' })
+  assert.deepEqual(input, before)
+  for (const select of [(x: any) => x.policies[0], (x: any) => x.reusablePolicy]) {
+    for (const uid of [id(99), null, 1, '', { id: input.policyID }]) {
+      rejects(x => { select(x).uid = uid })
+    }
+    for (const reusable of [false, null, 'true', 1, {}]) {
+      rejects(x => { select(x).reusable = reusable })
+    }
+    rejects(x => { select(x).uid = select(x).id; select(x).reusable = true; select(x).unexpected = true })
+  }
+})
+
 test('service token snapshot proves UUID/native-ID binding and current unexpired status without secrets', () => {
   for (const mutate of [
     (x: any) => { x.serviceTokens = [] }, (x: any) => { x.serviceTokens.pop() },

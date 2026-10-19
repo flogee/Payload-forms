@@ -16,7 +16,7 @@ export function qaReleaseFixture() {
     destinations: hosts.map((host: string) => ({ type: 'public', uri: host + '/api/integrations/qa' })), policies: [{ id: vars.QA_MACHINE_POLICY_ID }] }
   const publicApp = { id: id(3), type: 'self_hosted', name: publicParticipationName,
     destinations: participationDestinations(hosts).map((uri: string) => ({ type: 'public', uri })) }
-  const machinePolicy: any = { id: vars.QA_MACHINE_POLICY_ID, decision: 'non_identity',
+  const machinePolicy: any = { id: vars.QA_MACHINE_POLICY_ID, uid: vars.QA_MACHINE_POLICY_ID, reusable: true, decision: 'non_identity',
     include: clients.map((_, i) => ({ service_token: { token_id: id(i + 20) } })) }
   const humanPolicy = { id: vars.ACCESS_POLICY_ID, decision: 'allow', include: [{ email: { email: vars.ACCESS_INITIAL_EMAILS } }] }
   const publicPolicy = { decision: 'bypass', include: [{ everyone: {} }] }
