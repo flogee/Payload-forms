@@ -51,7 +51,7 @@ export async function checkEvaluationRunsHTTP(base: string, teamToken: string) {
   const credentialAfterHeader = { key: header.searchParams.get('run')!, token: header.searchParams.get('access')! }
   const wrongPage = `${urlA.pathname}?run=${b.key}&access=${credentialA.token}`
   assert.equal((await request(wrongPage)).status, 404, 'a wrong run grant never falls back to unscoped participation')
-  const submission = (evaluationRun: typeof credentialA, rating: number, submissionID = randomUUID()) => ({
+  const submission = (evaluationRun: { key: string; token: string }, rating: number, submissionID = randomUUID()) => ({
     surveyID: survey.id, version, submissionID, confirmTest: true, durationSeconds: 1,
     answers: { RATING: rating, COMMENT: `private-comment-${evaluationRun.key}` }, evaluationRun,
   })
