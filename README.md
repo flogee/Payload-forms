@@ -6,7 +6,7 @@ Create versioned questionnaires, share a participation link or QR code, and revi
 
 ## What is included
 
-- Twelve response formats: single and multiple choice, short and long text, numbers, numeric rows, Likert/matrix rows, repeatable lists, sliders, stars, smileys, and ranking.
+- Twelve response formats: single and multiple choice, short and long text, numbers, numeric rows, responsive Likert matrices, repeatable lists, sliders, stars, smileys, and ranking. Matrices use clickable radio scales on wide screens and labeled choices under each statement on narrow screens; each row can be cleared independently.
 - A section-based editor with rich text, image blocks, and per-questionnaire header branding.
 - Anonymous participation links with protected team administration, individual responses, exports, and analysis.
 - Versioned privacy notices, separate contact records, retention reminders, questionnaire duplication and JSON/Markdown/CSV downloads.

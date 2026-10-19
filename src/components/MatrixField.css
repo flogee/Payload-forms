@@ -1,0 +1,29 @@
+.matrix-field { container-type: inline-size; margin-top: 14px; }
+.matrix-field__hint { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+.matrix-field__scroll { overflow-x: auto; scrollbar-color: var(--teal) var(--wash); }
+.matrix-field__scroll:focus-visible { outline: 2px solid var(--teal); outline-offset: 4px; }
+.matrix-field__table { width: 100%; min-width: calc(13rem + var(--matrix-options) * 4.25rem); border-collapse: collapse; table-layout: fixed; }
+.matrix-field__table th, .matrix-field__table td { padding: 8px 4px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.matrix-field__table thead th { background: var(--wash); font-size: 12px; line-height: 1.45; font-weight: 600; text-align: center; }
+.matrix-field__table th:first-child { width: 32%; padding-left: 12px; padding-right: 16px; text-align: left; }
+.matrix-field__table tbody th { font-size: 14px; line-height: 1.5; font-weight: 500; }
+.matrix-field__reset { display: block; margin-top: 4px; min-height: 28px; text-align: left; }
+.matrix-field__reset:disabled:hover { border-bottom-color: transparent; }
+.matrix-field__choice { display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 48px; padding: 10px; border: 1px solid transparent; border-radius: var(--radius); cursor: pointer; }
+.matrix-field__choice:has(input:checked) { border-color: var(--teal); background: var(--wash); }
+.matrix-field__choice:has(input:focus-visible) { outline: 2px solid var(--teal); outline-offset: 2px; }
+.matrix-field__choice input[type=radio] { margin: 0; }
+.matrix-field__mobile-label { display: none; }
+.matrix-field__sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+@media (hover: hover) { .matrix-field__choice:hover { background: var(--wash); border-color: var(--teal); } }
+@container (max-width: 620px) {
+  .matrix-field__table { display: block; min-width: 0; }
+  .matrix-field__table thead { display: none; }
+  .matrix-field__table tbody { display: grid; }
+  .matrix-field__table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 18px 0; border-top: 1px solid var(--line); }
+  .matrix-field__table th, .matrix-field__table td { display: block; padding: 0; border: 0; }
+  .matrix-field__table th:first-child { grid-column: 1 / -1; width: auto; padding: 0 0 4px; }
+  .matrix-field__reset { margin-top: 2px; min-height: 44px; }
+  .matrix-field__choice { justify-content: flex-start; gap: 10px; height: 100%; padding: 10px 12px; border-color: var(--line); background: #fffdf8; }
+  .matrix-field__mobile-label { display: block; font-size: 13px; line-height: 1.4; }
+}
