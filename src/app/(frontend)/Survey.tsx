@@ -9,6 +9,7 @@ import { ParticipantPrivacy } from '@/components/ParticipantPrivacy'
 import { SurveyPrivacyDialog } from '@/components/SurveyPrivacyDialog'
 import { SurveyContent } from '@/components/SurveyContent'
 import { VotingField } from '@/components/VotingField'
+import { MatrixField } from '@/components/MatrixField'
 import { SurveyBrand } from '@/components/SurveyBrand'
 import type { SurveyBranding } from '@/survey/branding'
 function CountInput({ id, label, q, value, onChange }: { id: string; label: string; q: Question; value?: Count; onChange: (value: Count | undefined) => void }) {
@@ -29,7 +30,7 @@ function Field({ q, value, onChange, error }: { q: Question; value?: Answer; onC
   if (q.kind === 'slider' || q.kind === 'stars' || q.kind === 'smiley' || q.kind === 'ranking') input = <VotingField q={q} value={value} onChange={onChange} invalid={Boolean(error)} describedBy={[q.help ? `${id}-help` : '', error ? `${id}-error` : ''].filter(Boolean).join(' ') || undefined} />
   if (q.kind === 'count') input = <CountInput id={id} label="Angabe" q={q} value={value as Count} onChange={onChange} />
   if (q.kind === 'counts') input = <div className="matrix">{q.rows?.map(r => <CountInput key={r.key} id={`${id}-${r.key}`} label={r.label} q={q} value={(value as Record<string, Count> | undefined)?.[r.key]} onChange={v => { const updated = { ...(value as Record<string, Count> || {}) }; if (v) updated[r.key] = v; else delete updated[r.key]; onChange(updated) }} />)}</div>
-  if (q.kind === 'matrix') input = <div className="matrix">{q.rows?.map(r => <div className="matrix-row" key={r.key}><label htmlFor={`${id}-${r.key}`}>{r.label}</label><select id={`${id}-${r.key}`} value={(value as Record<string, string> | undefined)?.[r.key] || ''} onChange={e => { const updated = { ...(value as Record<string, string> || {}) }; if (e.target.value) updated[r.key] = e.target.value; else delete updated[r.key]; onChange(updated) }}><option value="">Bitte wählen</option>{q.options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>)}</div>
+  if (q.kind === 'matrix') input = <MatrixField q={q} value={value} onChange={onChange} invalid={Boolean(error)} describedBy={[q.help ? `${id}-help` : '', error ? `${id}-error` : ''].filter(Boolean).join(' ') || undefined} />
   if (q.kind === 'committees') {
     const rows = Array.isArray(value) ? value as { body: string; volume: string }[] : [{ body: '', volume: '' }, { body: '', volume: '' }, { body: '', volume: '' }]
     const update = (i: number, key: 'body' | 'volume', text: string) => onChange(rows.map((r, j) => j === i ? { ...r, [key]: text } : r))

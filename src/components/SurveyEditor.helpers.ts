@@ -7,7 +7,7 @@ export const answerFormats = {
   textarea: { label: 'Längerer Text', description: 'Ein mehrzeiliges Textfeld für Erläuterungen oder offene Rückmeldungen.' },
   count: { label: 'Zahl mit „weiß nicht“', description: 'Eine Zahl mit dem Status „weiß nicht“. Zahlenbereich und bei Bedarf „nicht zutreffend“ festlegen.' },
   counts: { label: 'Mehrere Zahlen mit Status', description: 'Je Zeile eine Zahl mit eigenem Status. Zeilen, Zahlenbereich und bei Bedarf „nicht zutreffend“ festlegen.' },
-  matrix: { label: 'Skala / Bewertungszeilen', description: 'Je Zeile eine Antwort auf derselben Skala auswählen. Zeilen sind die Aussagen; Antwortoptionen bilden die gemeinsame Skala, zum Beispiel Zustimmung von „gar nicht“ bis „vollständig“.' },
+  matrix: { label: 'Skala / Bewertungszeilen', description: 'Eine Matrix mit anklickbaren Auswahlpunkten: je Zeile eine Antwort auf derselben Skala. Zeilen sind die Aussagen; Antwortoptionen bilden die gemeinsame Skala in den Spalten, zum Beispiel Zustimmung von „gar nicht“ bis „vollständig“. Auf schmalen Bildschirmen stehen die beschrifteten Optionen unter jeder Aussage.' },
   committees: { label: 'Gremienliste', description: 'Eine wiederholbare Liste mit Gremium und Entscheidungsvolumen. Teilnehmende können weitere Einträge ergänzen.' },
   slider: { label: 'Slider / Zahlen-Skala', description: 'Einen Wert mit Regler oder Zahleneingabe wählen. Standard: 0–10 in Einerschritten; Bereich bis 100, Schrittweite und Endbeschriftungen sind einstellbar. Ohne Auswahl bleibt die Frage unbeantwortet.' },
   stars: { label: 'Sterne-Bewertung', description: 'Eine Bewertung von 1 bis 5 Sternen. Bei Bedarf die Bedeutung der beiden Enden beschriften.' },
