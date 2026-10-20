@@ -20,6 +20,24 @@ function overlapsInternalHostname(uri, hostnames) {
   return hostnames.some(host => new RegExp(`^${pattern}$`).test(host))
 }
 
+// The display name is shared by installations in one account. Only effective
+// destinations identify a candidate for this installation; exact paths/policy
+// still need validatePublicParticipation. Unknown destinations cannot prove
+// that a same-name application is disjoint and must fail closed.
+export function isPublicParticipationCandidate(application, hostnames = internalHostnames) {
+  if (application.name !== publicParticipationName) return false
+  const destinations = publicDestinations(application)
+  if (!destinations.length || (application.destinations != null && destinations.length !== application.destinations.length) ||
+    destinations.some(destination => {
+      if (typeof destination.uri !== 'string' || destination.uri.length > 512 || /[?#\s\\]/.test(destination.uri) ||
+        (destination.overrides != null && (!Array.isArray(destination.overrides) || destination.overrides.length))) return true
+      const [hostname] = destination.uri.split('/')
+      return hostname.length > 253 || !hostname.includes('.') || hostname.split('.').some(label =>
+        !label.length || label.length > 63 || !/^[a-z0-9*](?:[a-z0-9*-]*[a-z0-9*])?$/.test(label))
+    })) throw new Error('Access-Zielinventar der Teilnahme-Anwendung unvollständig.')
+  return destinations.some(destination => overlapsInternalHostname(destination.uri, hostnames))
+}
+
 export function validatePublicParticipation(application, policies, hostnames = internalHostnames) {
   const publicParticipationDestinations = participationDestinations(hostnames)
   const destinations = application.destinations
@@ -43,7 +61,7 @@ export function validateAccessApplications(applications, applicationID, publicAp
   let publicApplication
   for (const app of applications) {
     if (app.id === applicationID) continue
-    if (app.name === publicParticipationName || (publicApplicationID && app.id === publicApplicationID)) {
+    if (isPublicParticipationCandidate(app, hostnames) || (publicApplicationID && app.id === publicApplicationID)) {
       validatePublicParticipation(app, undefined, hostnames)
       if (!app.id || publicApplication || (publicApplicationID && app.id !== publicApplicationID)) throw new Error('Öffentliche Access-Anwendung ist nicht eindeutig zugeordnet.')
       publicApplication = app

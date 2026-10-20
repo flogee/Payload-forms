@@ -1,7 +1,7 @@
 import { open } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
-import { validateAccessApplications, validatePublicParticipation } from './check-access.mjs'
-import { configuredHostnames, publicParticipationName } from './public-access.mjs'
+import { isPublicParticipationCandidate, validateAccessApplications, validatePublicParticipation } from './check-access.mjs'
+import { configuredHostnames } from './public-access.mjs'
 import { parseQAJSON } from './qa-machine-config.mjs'
 
 const path = '/api/integrations/qa'
@@ -142,7 +142,7 @@ export function validateQAMachineAccessInventory(input, { requireActiveTokens = 
     unique(input.applications.map(application => application.id))
     for (const application of input.applications) {
       destinations(application)
-      check(application.name !== publicParticipationName || application.id === input.publicApplicationID)
+      check(!isPublicParticipationCandidate(application, input.hostnames) || application.id === input.publicApplicationID)
     }
     const target = input.applications.find(application => application.id === input.applicationID)
     const human = input.applications.find(application => application.id === input.humanApplicationID)

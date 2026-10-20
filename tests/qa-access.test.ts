@@ -104,6 +104,33 @@ test('complete bounded application snapshots reject malformed, duplicated or ove
   assert.throws(() => validateQAMachineAccessInventory(input))
 })
 
+test('offline QA inventory permits disjoint same-name installations but still requires its own explicit public ID', () => {
+  for (const present of [false, true]) {
+    const input = fixture()
+    const foreign = { id: id(97), name: publicParticipationName, type: 'self_hosted',
+      destinations: participationDestinations(['other.example.com']).map((uri: string) => ({ type: 'public', uri })) }
+    input.applications.unshift(foreign)
+    if (present) {
+      input.publicApplicationID = id(98)
+      input.applications.push({ ...foreign, id: input.publicApplicationID,
+        destinations: participationDestinations(input.hostnames).map((uri: string) => ({ type: 'public', uri })) })
+    }
+    const before = structuredClone(input)
+    assert.doesNotThrow(() => validateQAMachineAccessInventory(input))
+    assert.deepEqual(input, before)
+    input.applications.reverse()
+    assert.doesNotThrow(() => validateQAMachineAccessInventory(input, { requireActiveTokens: false }))
+    input.publicApplicationID = foreign.id
+    assert.throws(() => validateQAMachineAccessInventory(input))
+    delete input.publicApplicationID
+    if (present) assert.throws(() => validateQAMachineAccessInventory(input))
+  }
+  for (const destinations of [[], [{ type: 'public', uri: '*.example.net/f/*' }],
+    [{ type: 'public', uri: 'forms.example.org:443/f/*' }],
+    participationDestinations(['other.example.com', 'forms.example.org']).map((uri: string) => ({ type: 'public', uri })),
+  ]) rejects(input => { input.applications.push({ id: id(97), name: publicParticipationName, type: 'self_hosted', destinations }) })
+})
+
 test('sole reusable non-identity policy permits only the complete explicit UUID token set', () => {
   for (const decision of ['allow', 'bypass', 'deny', 'service_auth']) rejects(x => { x.policies[0].decision = decision })
   for (const include of [[], [{ everyone: {} }], [{ any_valid_service_token: {} }], [{ group: { id: id(1) } }],

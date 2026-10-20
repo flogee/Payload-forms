@@ -112,6 +112,13 @@ First deploy the guards and budgets behind whole-host protection. Then, with the
 
 Assign exactly one Everyone bypass policy without extra selectors, require/exclude conditions or overrides. Keep the existing whole-host team application and its sole reusable allow policy unchanged. More-specific participation paths bypass Access only for this route set; the application guard rejects unsupported methods/subpaths and restricts images to the reachable questionnaire.
 
+The participation name is a shared display label, not an account-wide installation
+identifier. Release checks discover it only through destinations overlapping this
+installation's configured hosts. Same-name applications on verifiably disjoint
+hosts may coexist; unknown destinations, overlapping alternatives and a configured
+public app ID belonging to another installation still stop the release. An offline
+QA inventory must explicitly identify its own participation app when present.
+
 Recheck both public and private boundaries using a client without cookies: saved pretest, required JS/CSS, privacy notices, missing/foreign images, invalid non-writing submission, and protected admin/response/export/analysis/media/MCP routes. A successful provider save is not a successful anonymous test. Do not create fake records in an existing live database for a smoke test.
 
 Future releases validate the exact public application inventory and run those HTTPS checks. Set `RELEASE_PROBE_SLUG` to an existing fictional pretest for that check (default `sample`). Drafts, closed forms and real research collection remain unavailable. Public sharing, research consent and privacy readiness are separate decisions.

@@ -83,6 +83,29 @@ test('read-only live preflight validates QA plus unchanged human and public boun
   assert.ok(f.calls.every(call => (call.options.headers as any).Authorization === 'Bearer fictional-provider-token'))
 })
 
+test('online QA preflight discovers only this installation participation app, with QA on or off', async () => {
+  for (const enabled of ['0', '1']) for (const present of [false, true]) for (const foreignFirst of [false, true]) {
+    const f = fixture(); f.env.QA_MACHINE_ENABLED = enabled
+    const foreign = { ...f.publicApp, id: '99999999-1111-4111-8111-111111111111',
+      destinations: f.publicApp.destinations.map((destination: { type: string; uri: string }) => ({ ...destination,
+        uri: destination.uri.replace(f.hosts[0], 'other.example.com') })) }
+    const own = [f.human, f.machine, ...(present ? [f.publicApp] : [])]
+    f.setApplications(foreignFirst ? [foreign, ...own] : [...own, foreign])
+    const before = structuredClone(foreign)
+    assert.deepEqual(await f.run(), { publicParticipation: present, qaMachine: enabled === '1' })
+    assert.deepEqual(foreign, before)
+    assert.equal(f.calls.some(call => call.url.includes(`/apps/${foreign.id}/policies`)), false)
+    assert.equal(f.calls.some(call => call.url.includes(`/apps/${f.publicApp.id}/policies`)), present)
+    assert.equal(f.calls.some(call => call.url.includes('/service_tokens')), enabled === '1')
+    if (present) {
+      f.env.FORMS_PUBLIC_ACCESS_APP_ID = f.publicApp.id
+      assert.deepEqual(await f.run(), { publicParticipation: true, qaMachine: enabled === '1' })
+    }
+    f.env.FORMS_PUBLIC_ACCESS_APP_ID = foreign.id
+    await assert.rejects(f.run())
+  }
+})
+
 test('QA overlap is exempted only after exact inventory/detail/policy/client checks', async () => {
   for (const mutate of [
     (f: any) => { f.machine.destinations[0].uri = f.hosts[0] + '/api/*' },

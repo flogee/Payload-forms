@@ -112,6 +112,32 @@ const publicName = 'Payload-forms – Teilnahme'
 const publicApp = { id: 'participation', name: publicName, type: 'self_hosted', destinations: internalHostnames.flatMap(host =>
   ['/f/*', '/datenschutz/*', '/api/survey/submit', '/_next/static/*'].map(path => ({ type: 'public', uri: `${host}${path}` }))) }
 const bypass = { decision: 'bypass', include: [{ everyone: {} }], exclude: [] as unknown[], require: [] as unknown[] }
+const foreignPublicApp = { ...publicApp, id: 'foreign-participation', destinations: publicApp.destinations.map(destination =>
+  ({ ...destination, uri: destination.uri.replace(first, 'other.example.com').replace(second, 'another.example.com') })) }
+
+test('public participation discovery is scoped to the selected installation, not its account-wide name', () => {
+  assert.equal(validateAccessApplications([app, foreignPublicApp], app.id), undefined)
+  for (const applications of [[app, foreignPublicApp, publicApp], [publicApp, foreignPublicApp, app]]) {
+    assert.equal(validateAccessApplications(applications, app.id)?.id, publicApp.id)
+    assert.equal(validateAccessApplications(applications, app.id, publicApp.id)?.id, publicApp.id)
+    assert.throws(() => validateAccessApplications(applications, app.id, foreignPublicApp.id))
+  }
+  assert.throws(() => validateAccessApplications([app, foreignPublicApp], app.id, foreignPublicApp.id))
+  // Modern destinations, not a stale legacy display domain, define ownership.
+  assert.equal(validateAccessApplications([app, { ...foreignPublicApp, domain: first,
+    self_hosted_domains: internalHostnames }], app.id), undefined)
+})
+
+test('same-name applications still reject ambiguous, malformed or overlapping destinations', () => {
+  for (const destinations of [[], null, {}, [{ type: 'private', uri: 'other.example.com' }],
+    [{ type: 'public', uri: null }], [{ type: 'public', uri: `${first}:443/f/*` }],
+    [{ type: 'public', uri: `user@${first}/f/*` }],
+    [{ type: 'public', uri: 'other.example.com/f/*', overrides: [{ path_pattern: '/admin' }] }],
+    [...foreignPublicApp.destinations, { type: 'public', uri: `${second}/admin` }],
+    [{ type: 'public', uri: '*.example.net/f/*' }],
+  ]) assert.throws(() => validateAccessApplications([app, { ...foreignPublicApp, destinations }], app.id))
+  assert.throws(() => validateAccessApplications([app, foreignPublicApp, publicApp, { ...publicApp, id: 'duplicate' }], app.id))
+})
 
 test('public participation has an exact unique inventory and cannot hide overlapping apps', () => {
   assert.equal(validateAccessApplications([app, publicApp], app.id)?.id, publicApp.id)
@@ -151,11 +177,12 @@ test('Access preflight reports participation and fetches its own sole policy whi
       const result = url.includes('/apps/participation/policies?') ? [bypass]
         : url.endsWith('/access/policies/policy') ? { id: 'policy', app_count: 1 }
         : url.endsWith('/policies?per_page=100') ? [{ ...policy, id: 'policy' }]
-        : url.endsWith('/apps?per_page=100') ? [app, ...(present ? [publicApp] : [])] : app
+        : url.endsWith('/apps?per_page=100') ? [app, foreignPublicApp, ...(present ? [publicApp] : [])] : app
       return Response.json({ success: true, result })
     }
     assert.deepEqual(await verifyAccess(env, { policyID: 'policy', request }), { publicParticipation: present })
     assert.equal(urls.some(url => url.includes('/apps/participation/policies?')), present)
+    assert.equal(urls.some(url => url.includes(`/apps/${foreignPublicApp.id}/policies?`)), false)
     if (present) await assert.rejects(verifyAccess(env, { request: async (url, options) => String(url).includes('/apps/participation/policies?')
       ? Response.json({ success: true, result: [policy] }) : request(url, options) }), /Bypass-Everyone/)
   }
