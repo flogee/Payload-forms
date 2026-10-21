@@ -1,5 +1,5 @@
 import { validateQAMachineAccessInventory } from './check-qa-access.mjs'
-import { publicParticipationName } from './public-access.mjs'
+import { isPublicParticipationCandidate } from './check-access.mjs'
 
 /** Read-only live metadata preflight, not ingress acceptance or policy creation.
  * read(url, true) must require a complete bounded single-page result.
@@ -19,7 +19,7 @@ export async function verifyQAMachineRelease({ settings, applications, humanAppl
       .filter(key => Object.hasOwn(token, key)).map(key => [key, token[key]])),
     ...(token.leak_reported_at != null ? { revoked: true } : {}),
   }))
-  const publicID = publicApplicationID ?? applications.find(app => app.name === publicParticipationName)?.id
+  const publicID = publicApplicationID ?? applications.find(app => isPublicParticipationCandidate(app, hostnames))?.id
   const input = { applicationID: settings.applicationID, policyID: settings.policyID, audience: settings.audience,
     humanApplicationID: humanApplication.id, humanPolicyID, humanAudience, hostnames, clients: settings.clients,
     ...(publicID ? { publicApplicationID: publicID } : {}), applications, policies, reusablePolicy, serviceTokens }
