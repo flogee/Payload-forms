@@ -14,6 +14,6 @@ export async function GET(req: Request) {
   if (!survey) return Response.json({ error: 'Fragebogen nicht gefunden.' }, { status: 404 })
   const result = await payload.find({ collection: 'responses', where: { survey: { equals: survey.id }, version: { equals: survey.version } }, user, overrideAccess: false, depth: 0, limit: 1000, sort: 'createdAt' })
   if (result.totalDocs > 1000) return Response.json({ error: 'Export über 1000 Antworten erfordert paginierte Verarbeitung.' }, { status: 422 })
-  const csv = exportCSV(fromStored(survey), result.docs.map(d => ({ id: d.id, version: d.version, createdAt: d.createdAt, durationSeconds: d.durationSeconds, answers: d.answers as Answers })))
-  return new Response(csv, { headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${survey.slug}-pretest-antworten.csv"`, 'Cache-Control': 'no-store' } })
+  const csv = exportCSV(fromStored(survey), result.docs.map(d => ({ id: d.id, version: d.version, createdAt: d.createdAt, durationSeconds: d.durationSeconds, testOnly: d.testOnly, answers: d.answers as Answers })))
+  return new Response(csv, { headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${survey.slug}-antworten.csv"`, 'Cache-Control': 'no-store' } })
 }

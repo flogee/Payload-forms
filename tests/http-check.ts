@@ -5,6 +5,7 @@ import { fromStored, toStored } from '../src/survey/storage'
 import { sample } from '../src/survey/sample'
 import jsQR from 'jsqr'
 import { PNG } from 'pngjs'
+import { checkRealSurveysHTTP } from './http-real-surveys'
 import { checkPrivacyHTTP } from './http-privacy'
 import { checkNotificationHTTP } from './http-notifications'
 import { checkContentHTTP } from './http-content'
@@ -236,6 +237,7 @@ assert.equal((await request('/f/sample')).status, 200, 'closing one form leaves 
 await checkPrivacyHTTP(base, token, apiKey)
 await checkNotificationHTTP(base, token, apiKey)
 await checkContentHTTP(base, token, apiKey)
+if (process.env.FORMS_REAL_SURVEYS_ENABLED === '1') await checkRealSurveysHTTP(base, token, apiKey)
 await checkRetentionHTTP(base, token, apiKey)
 await checkSurveyToolsHTTP(base, token, apiKey)
 await checkTeamHTTP(base, token, user.id)

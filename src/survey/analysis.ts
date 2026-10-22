@@ -5,7 +5,7 @@ import { ratingLabels, sliderSettings } from './voting'
 
 export const ANALYSIS_LIMIT = 1000
 export const MINIMUM_GROUP = 5
-export type AnalysisRecord = { answers: Answers; createdAt?: string }
+export type AnalysisRecord = { answers: Answers; createdAt?: string; testOnly?: boolean }
 const percent = (count: number, answered: number) => answered ? Math.round(count / answered * 1000) / 10 : 0
 const object = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
 
@@ -78,10 +78,13 @@ function rankingSeries(q: Question, values: unknown[], total: number): AnalysisS
 
 /** One deterministic calculation for the team UI, SVG export and MCP projection. */
 export function analyze(def: Definition, records: AnalysisRecord[], survey: AnalysisReport['survey'], now = new Date()): AnalysisReport {
-  if (records.length > ANALYSIS_LIMIT) throw new Error('Mehr als 1.000 Testantworten: paginierte Auswertung erforderlich. Es werden keine Teilergebnisse angezeigt.')
+  if (records.length > ANALYSIS_LIMIT) throw new Error('Mehr als 1.000 Antworten: paginierte Auswertung erforderlich. Es werden keine Teilergebnisse angezeigt.')
   const dates = records.map(r => r.createdAt?.slice(0, 10)).filter((v): v is string => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v)).sort()
+  const real = records.some(record => record.testOnly === false)
+  const test = records.some(record => record.testOnly !== false)
+  const dataset = real ? test ? 'mixed' : 'real' : records.length || survey.phase !== 'live' ? 'test' : 'real'
   return {
-    schemaVersion: 1, survey: { ...survey, version: def.version }, dataset: 'test', responses: records.length,
+    schemaVersion: 1, survey: { ...survey, version: def.version }, dataset, responses: records.length,
     unit: 'Antworten, keine unabhängigen Organisationen', generatedAt: now.toISOString(), firstDate: dates[0] ?? null, lastDate: dates.at(-1) ?? null,
     sections: def.sections.map(section => ({ id: section.id, title: section.title, series: section.questions.flatMap(q => {
       const values = records.filter(r => visible(q, r.answers)).map(r => r.answers[q.id])
@@ -91,7 +94,7 @@ export function analyze(def: Definition, records: AnalysisRecord[], survey: Anal
         : [series(q, values, records.length)]
     }) })),
     notes: [
-      'Nur Testantworten der gewählten gespeicherten Fassung; keine Forschungsdaten.',
+      dataset === 'test' ? 'Nur Testantworten der gewählten gespeicherten Fassung; keine Forschungsdaten.' : dataset === 'real' ? 'Antworten der gewählten gespeicherten Erhebungsfassung.' : 'Diese Fassung enthält Testantworten und echte Antworten; vor Verwendung getrennt prüfen.',
       'Prozente beziehen sich auf die beantwortete Frage bzw. Bewertungszeile. Fehlende Angaben und übersprungene Fragen werden getrennt gezählt.',
       'Mehrfachauswahl: Eine Antwort zählt je gewählter Option einmal. Die Prozentsumme kann über 100 % liegen.',
       'Schieberegler, Sterne und Smileys zeigen Häufigkeiten der gültigen Stufen. Rangordnungen zeigen je Option die Häufigkeit jedes Platzes; Prozentbasis sind nur vollständig gültige Rangordnungen. Teilweise oder ungültige Rangordnungen zählen als fehlend.',

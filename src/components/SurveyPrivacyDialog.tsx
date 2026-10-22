@@ -5,7 +5,7 @@ import type { PrivacyNotice as Notice } from '@/survey/privacy'
 import { PrivacyNotice } from './PrivacyNotice'
 import './SurveyPrivacyDialog.css'
 
-export function SurveyPrivacyDialog({ notice }: { notice?: Notice }) {
+export function SurveyPrivacyDialog({ notice, testOnly = true }: { notice?: Notice; testOnly?: boolean }) {
   const id = useId(), headingID = `${id}-heading`
   const dialog = useRef<HTMLDialogElement>(null)
 
@@ -18,7 +18,7 @@ export function SurveyPrivacyDialog({ notice }: { notice?: Notice }) {
         <form method="dialog"><button type="submit" className="secondary" autoFocus>Schließen</button></form>
       </div>
       <div className="survey-privacy-dialog__content">
-        {notice ? <PrivacyNotice notice={notice} draft /> : <section aria-label="Datenschutzhinweise zum Pretest">
+        {notice ? <PrivacyNotice notice={notice} draft={testOnly} /> : <section aria-label="Datenschutzhinweise zum Pretest">
           <div className="notice"><strong>Pretest mit erfundenen Angaben</strong>
             <p>Die vollständige Datenschutzinformation für eine echte Erhebung ist für diese Testfassung noch nicht freigegeben.</p>
           </div>

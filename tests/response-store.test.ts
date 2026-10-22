@@ -144,3 +144,76 @@ test('export cannot combine an erased response with contacts from a reused numer
     assert.equal((await readResponseExport(db, replaced.id, b.key))?.contact?.name, 'Andere Testperson')
   } finally { sqlite.close() }
 })
+
+function prepareLive(sqlite: DatabaseSync) {
+  const settings = testPrivacy({ reviewed: true })
+  const entries = Object.entries(settings)
+  sqlite.prepare(`UPDATE surveys SET phase='live', ${entries.map(([key]) => `privacy_${key.replace(/[A-Z]/g, letter => '_' + letter.toLowerCase())}=?`).join(',')} WHERE id=1`)
+    .run(...entries.map(([, value]) => typeof value === 'boolean' ? Number(value) : value))
+  const input = submission()
+  return { ...input, mode: 'live' as const, livePrivacy: settings,
+    contact: { name: '', email: 'fixture@example.org' }, digest: digest({ mode: 'live', payload: input.digest }) }
+}
+
+test('live submissions preserve real markers, separate optional contacts and mode-specific retries', async () => {
+  const { sqlite, db } = await fixture()
+  const previous = process.env.FORMS_REAL_SURVEYS_ENABLED
+  try {
+    const input = prepareLive(sqlite)
+    delete process.env.FORMS_REAL_SURVEYS_ENABLED
+    assert.equal((await saveSubmission(db, input)).state, 'closed')
+    process.env.FORMS_REAL_SURVEYS_ENABLED = '1'
+    const saved = await saveSubmission(db, input)
+    assert.equal(saved.state, 'saved')
+    if (saved.state !== 'saved') return
+    assert.equal(sqlite.prepare('SELECT test_only FROM responses').get()?.test_only, 0)
+    assert.equal(sqlite.prepare('SELECT test_only FROM response_contacts').get()?.test_only, 0)
+    assert.equal((await readResponseExport(db, saved.id, input.key))?.contact?.email, 'fixture@example.org')
+    assert.equal((await saveSubmission(db, { ...input, durationSeconds: 8 }) as any).duplicate, true)
+    assert.equal((await saveSubmission(db, { ...input, mode: 'pretest' })).state, 'conflict')
+    const noContact = { ...input, key: 'live-no-contact', erasureKey: 'live-no-contact-marker', contact: undefined as undefined,
+      receipt: { ...input.receipt!, contactConsent: false } }
+    assert.equal((await saveSubmission(db, noContact)).state, 'saved')
+    assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM response_contacts').get()?.n, 1)
+    delete process.env.FORMS_REAL_SURVEYS_ENABLED
+    assert.equal((await saveSubmission(db, input)).state, 'closed')
+    assert.equal(sqlite.prepare('SELECT test_only FROM responses LIMIT 1').get()?.test_only, 0, 'disable never relabels stored real data')
+  } finally {
+    if (previous === undefined) delete process.env.FORMS_REAL_SURVEYS_ENABLED
+    else process.env.FORMS_REAL_SURVEYS_ENABLED = previous
+    sqlite.close()
+  }
+})
+
+test('live insertion fails atomically after close, privacy revocation, stale profile, or missing reviewed receipt', async () => {
+  const previous = process.env.FORMS_REAL_SURVEYS_ENABLED
+  process.env.FORMS_REAL_SURVEYS_ENABLED = '1'
+  try {
+    for (const mutate of [
+      (sqlite: DatabaseSync) => sqlite.exec("UPDATE surveys SET phase='closed'"),
+      (sqlite: DatabaseSync) => sqlite.exec('UPDATE surveys SET privacy_reviewed=0'),
+      (sqlite: DatabaseSync) => sqlite.exec("UPDATE surveys SET privacy_notice_version='changed'"),
+      (sqlite: DatabaseSync) => sqlite.exec("UPDATE surveys SET privacy_purpose='changed'"),
+      (sqlite: DatabaseSync) => sqlite.exec("UPDATE surveys SET privacy_controller_name=''"),
+    ]) {
+      const { sqlite, db } = await fixture()
+      try {
+        const input = prepareLive(sqlite)
+        mutate(sqlite)
+        assert.equal((await saveSubmission(db, input)).state, 'closed')
+        assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM responses').get()?.n, 0)
+        assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM response_contacts').get()?.n, 0)
+      } finally { sqlite.close() }
+    }
+    const { sqlite, db } = await fixture()
+    try {
+      const input = prepareLive(sqlite)
+      for (const missing of [{ receipt: undefined as undefined }, { livePrivacy: undefined as undefined }, { livePrivacy: testPrivacy() }, { evaluationRun: { id: 1, key: 'fictional-run' } }]) {
+        assert.equal((await saveSubmission(db, { ...input, ...missing })).state, 'closed')
+      }
+    } finally { sqlite.close() }
+  } finally {
+    if (previous === undefined) delete process.env.FORMS_REAL_SURVEYS_ENABLED
+    else process.env.FORMS_REAL_SURVEYS_ENABLED = previous
+  }
+})

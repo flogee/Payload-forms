@@ -67,3 +67,10 @@ shutdown after token revocation without changing stable client keys or budgets.
 This guarded prototype is not an enabled installation. A tagged source release
 does not prove actual ingress or real-data acceptance; both remain separate work;
 see [configuration and preflight contract](EVALUATION-RUNS.md#prepared-coordinated-release-wiring).
+
+
+## Real-survey compatibility boundary
+
+The real-survey feature reuses stored phase/privacy/test-marker fields without a migration or rewriting prior rows. It adds the exact, default-disabled operator setting `FORMS_REAL_SURVEYS_ENABLED` and the mode-specific HTTP confirmation `confirmParticipation: true`; legacy pretests retain `confirmTest: true`. Production composition accepts the flag only from explicit selected configuration. Worker runtime defaults override missing/malformed flags before OpenNext can reuse build-time values. Each live version requires complete reviewed privacy settings and human-administrator activation; started versions can only close. Live insertions atomically compare the current privacy profile and phase. Ordinary contact emails and optional names apply only to live mode, while fictional contacts retain their original rules.
+
+CSV `test_only` values and analysis `dataset` labels now reflect stored response mode, including closed real surveys. Machine survey reads are restricted to draft/pretest instruments, machine response reads to test rows, separate contacts to human team accounts, and machine analysis to pretests. QA/evaluation runs remain fictional only. Deployment, privacy review, backup and release ownership stay with the operator; an enabled source build does not authorize or prove rollout. See [real-survey operation](INSTALL.md#real-surveys).

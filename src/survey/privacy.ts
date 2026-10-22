@@ -114,6 +114,8 @@ export const participantContactSchema = z.object({
   email: z.string().trim().email().max(254),
 }).strict()
 
+export const liveParticipantContactSchema = participantContactSchema.extend({ name: z.string().trim().max(200).default('') })
+
 export function participantContact(
   settings: PrivacySettings, requested: boolean, value: unknown, testOnly: boolean,
 ): ParticipantContact | undefined {
@@ -126,8 +128,8 @@ export function participantContact(
     if (value !== undefined) throw new Error('Kontaktangaben benötigen eine eigene Zustimmung.')
     return undefined
   }
-  const parsed = participantContactSchema.safeParse(value)
-  if (!parsed.success) throw new Error('Bitte Name und gültige E-Mail-Adresse ergänzen.')
+  const parsed = (testOnly ? participantContactSchema : liveParticipantContactSchema).safeParse(value)
+  if (!parsed.success) throw new Error(testOnly ? 'Bitte Name und gültige E-Mail-Adresse ergänzen.' : 'Bitte eine gültige E-Mail-Adresse ergänzen.')
   if (testOnly && !parsed.data.email.toLowerCase().endsWith('.invalid')) {
     throw new Error('Im Pretest bitte eine erfundene E-Mail mit der Endung .invalid verwenden, zum Beispiel test@example.invalid.')
   }

@@ -34,6 +34,7 @@ export function validateInstallConfig(config) {
   verifyPublicConfig(internal)
   // Offline schema only. An authorized release separately verifies the live
   // exact Access inventory; configuration validation never authorizes rollout.
+  if (vars.FORMS_REAL_SURVEYS_ENABLED !== undefined && !['0', '1'].includes(vars.FORMS_REAL_SURVEYS_ENABLED)) throw new Error('FORMS_REAL_SURVEYS_ENABLED must be the string 0 or 1; omitted means disabled.')
   const qaMachine = qaMachineInstallSettings(vars)
   if (vars.ACCESS_LOGIN_ENABLED !== '1' || vars.ACCESS_SYNC_ENABLED !== '1' ||
     !/^https:\/\/[a-z0-9-]+\.cloudflareaccess\.com$/.test(vars.ACCESS_TEAM_DOMAIN || '') || placeholder(vars.ACCESS_TEAM_DOMAIN) ||
@@ -44,7 +45,7 @@ export function validateInstallConfig(config) {
     (vars.RELEASE_PROBE_SLUG && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(vars.RELEASE_PROBE_SLUG))) {
     throw new Error('Configure the own Access team domain, application, audience, sole reusable policy and initial email allowlist.')
   }
-  const publicVars = new Set(['PUBLIC_GUARD_ENABLED', 'SURVEY_ORIGINS', 'LOCAL_PROTOTYPE', 'DISABLE_SCHEMA_PUSH',
+  const publicVars = new Set(['FORMS_REAL_SURVEYS_ENABLED', 'PUBLIC_GUARD_ENABLED', 'SURVEY_ORIGINS', 'LOCAL_PROTOTYPE', 'DISABLE_SCHEMA_PUSH',
     'MAIL_ENABLED', 'MAIL_FROM', 'MAIL_ORIGIN', 'MAIL_ALLOWED_RECIPIENTS', 'MAIL_MONTHLY_LIMIT', 'MAIL_LOCAL_TEST',
     'OPS_ALERT_RECIPIENT', 'ACCESS_LOGIN_ENABLED', 'ACCESS_TEAM_DOMAIN', 'ACCESS_AUD', 'ACCESS_SYNC_ENABLED',
     'ACCESS_ACCOUNT_ID', 'ACCESS_APP_ID', 'ACCESS_POLICY_ID', 'ACCESS_INITIAL_EMAILS', 'RELEASE_PROBE_SLUG', ...qaMachineVariables])
@@ -72,8 +73,8 @@ export function productionEnvironment(install, env = process.env, { remote = fal
   if (env.CLOUDFLARE_ACCOUNT_ID && env.CLOUDFLARE_ACCOUNT_ID !== install.internal.account_id) throw new Error('Selected account differs from CLOUDFLARE_ACCOUNT_ID.')
   const selected = { ...env }
   const qaMachine = qaMachineInstallSettings(install.internal.vars)
-  for (const key of Object.keys(selected)) if (/^(MAIL_|ACCESS_|QA_MACHINE_|OPS_ALERT_|SURVEY_ORIGINS?$|FORMS_LOCAL_D1_PATH$|NEXT_DEV_WRANGLER_ENV$|CLOUDFLARE_ENV$|WRANGLER_ENV$)/.test(key)) delete selected[key]
-  return { ...selected, ...install.internal.vars, QA_MACHINE_ENABLED: qaMachine?.enabled ? '1' : '0', PAYLOAD_SECRET: env.PAYLOAD_SECRET,
+  for (const key of Object.keys(selected)) if (/^(MAIL_|ACCESS_|QA_MACHINE_|FORMS_REAL_SURVEYS_ENABLED$|OPS_ALERT_|SURVEY_ORIGINS?$|FORMS_LOCAL_D1_PATH$|NEXT_DEV_WRANGLER_ENV$|CLOUDFLARE_ENV$|WRANGLER_ENV$)/.test(key)) delete selected[key]
+  return { ...selected, ...install.internal.vars, FORMS_REAL_SURVEYS_ENABLED: install.internal.vars.FORMS_REAL_SURVEYS_ENABLED === '1' ? '1' : '0', QA_MACHINE_ENABLED: qaMachine?.enabled ? '1' : '0', PAYLOAD_SECRET: env.PAYLOAD_SECRET,
     PAYLOAD_FORMS_CONFIG: install.configPath, CLOUDFLARE_ACCOUNT_ID: install.internal.account_id,
     PAYLOAD_FORMS_ACCESS_APP_ID: install.internal.vars.ACCESS_APP_ID,
     PAYLOAD_FORMS_ALLOWED_EMAILS: install.internal.vars.ACCESS_INITIAL_EMAILS,

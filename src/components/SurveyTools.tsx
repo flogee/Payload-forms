@@ -99,7 +99,7 @@ function SavedSurveyTools({ id, savedKey }: { id: string | number; savedKey: str
     <h3 id={`${fieldID}-heading`}>Downloads und Kopie</h3>
     <p>Es gilt die gespeicherte Fassung. Ungespeicherte Änderungen werden erst nach dem Speichern berücksichtigt.</p>
     <div className="survey-tools__buttons">
-      <a href={`/auswertung?surveyID=${encodeURIComponent(String(id))}`}>Testantworten auswerten und Diagramme herunterladen</a>
+      <a href={`/auswertung?surveyID=${encodeURIComponent(String(id))}`}>Antworten auswerten und Diagramme herunterladen</a>
       <Button type="button" buttonStyle="secondary" size="small" disabled={busy} onClick={() => void run('json')}>Fragebogen als JSON</Button>
       <Button type="button" buttonStyle="secondary" size="small" disabled={busy} onClick={() => void run('markdown')}>Fragebogen als Markdown</Button>
       <Button type="button" buttonStyle="secondary" size="small" disabled={busy} onClick={() => void run('csv')}>Antwortdaten als CSV</Button>

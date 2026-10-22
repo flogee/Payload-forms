@@ -11,7 +11,7 @@ export type AnalysisSection = { id: string; title: string; series: AnalysisSerie
 export type AnalysisReport = {
   schemaVersion: 1
   survey: { id: number; title: string; slug: string; version: string; phase: string }
-  dataset: 'test'; responses: number; unit: string; generatedAt: string
+  dataset: 'test' | 'real' | 'mixed'; responses: number; unit: string; generatedAt: string
   firstDate: string | null; lastDate: string | null
   sections: AnalysisSection[]; notes: string[]
 }

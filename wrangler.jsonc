@@ -39,7 +39,8 @@
     }
   ],
   "vars": {
-    "PUBLIC_GUARD_ENABLED": "1"
+    "PUBLIC_GUARD_ENABLED": "1",
+    "FORMS_REAL_SURVEYS_ENABLED": "0"
   },
   "ratelimits": [
     {
@@ -113,6 +114,7 @@
       ],
       "vars": {
         "PUBLIC_GUARD_ENABLED": "1",
+        "FORMS_REAL_SURVEYS_ENABLED": "0",
         "SURVEY_ORIGINS": "https://forms.example.org,https://forms.example.net",
         "LOCAL_PROTOTYPE": "0",
         "DISABLE_SCHEMA_PUSH": "1",

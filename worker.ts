@@ -13,6 +13,9 @@ import { QA_MACHINE_PATH } from './src/auth/qa-machine'
 
 export default {
   async fetch(request, env, ctx) {
+    // Supply an explicit runtime default before OpenNext fills missing values
+    // from build-time env. Removing an old opt-in must never inherit that build.
+    env = { ...env, FORMS_REAL_SURVEYS_ENABLED: env.FORMS_REAL_SURVEYS_ENABLED === '1' ? '1' : '0' }
     // Only this exact API has its own non-human JWT boundary. Human mutation
     // origin checks remain unchanged everywhere else; no public bypass added.
     if (new URL(request.url).pathname === QA_MACHINE_PATH) return handler.fetch(request, env, ctx)

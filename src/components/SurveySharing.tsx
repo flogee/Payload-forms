@@ -35,10 +35,10 @@ export function SurveySharing() {
   const [origin, setOrigin] = useState('')
   const [copyStatus, setCopyStatus] = useState<{ url: string; message: string }>()
   const [qrError, setQRError] = useState('')
-  const savedPretest = id != null && data?.phase === 'pretest'
+  const savedActive = id != null && ['pretest', 'live'].includes(data?.phase)
 
   useEffect(() => {
-    if (!savedPretest) return
+    if (!savedActive) return
     const controller = new AbortController()
     let active = true
     const snapshot = { data, id, lastUpdateTime, retry }
@@ -72,13 +72,13 @@ export function SurveySharing() {
     }
     void load()
     return () => { active = false; controller.abort() }
-  }, [data, id, lastUpdateTime, retry, savedPretest])
+  }, [data, id, lastUpdateTime, retry, savedActive])
 
   // Hide the previous response immediately when the saved document changes,
   // including the render before the next effect starts its request.
   const current = state && state.data === data && state.id === id && state.lastUpdateTime === lastUpdateTime && state.retry === retry
     ? state : undefined
-  const links = savedPretest ? current?.result?.links : undefined
+  const links = savedActive ? current?.result?.links : undefined
   const selected = links?.find(link => link.origin === origin) ?? links?.[0]
 
   async function copyLink() {
@@ -97,19 +97,19 @@ export function SurveySharing() {
   }
 
   const inactiveMessage = id == null
-    ? 'Zuerst den Fragebogen speichern. Teilnahmelinks gibt es für einen gespeicherten Pretest.'
+    ? 'Zuerst den Fragebogen speichern. Teilnahmelinks gibt es für freigegebene gespeicherte Fragebögen.'
     : data?.phase === 'closed'
       ? 'Dieser Fragebogen ist geschlossen. Es gibt keine aktive Einladung.'
-      : 'Für einen Teilnahmelink den Status „Pretest“ wählen und speichern.'
+      : 'Für einen Teilnahmelink einen freigegebenen Status wählen und speichern.'
 
   return (
-    <section className="survey-sharing" aria-labelledby={`${fieldID}-heading`} aria-busy={savedPretest && !current?.result && !current?.error}>
+    <section className="survey-sharing" aria-labelledby={`${fieldID}-heading`} aria-busy={savedActive && !current?.result && !current?.error}>
       <h3 id={`${fieldID}-heading`}>Teilnahmelink und QR-Code</h3>
-      <p>Pretest mit erfundenen Angaben. Teilnehmende öffnen diesen Link ohne Anmeldung; das Backend und gespeicherte Antworten bleiben geschützt.</p>
+      <p>{data?.phase === 'live' ? 'Echte Erhebung.' : 'Pretest mit erfundenen Angaben.'} Teilnehmende öffnen diesen Link ohne Anmeldung; das Backend und gespeicherte Antworten bleiben geschützt.</p>
       <p className="survey-sharing__hint">Es gilt der gespeicherte Status. Änderungen werden erst nach dem Speichern berücksichtigt.</p>
-      {!savedPretest && <p role="status">{inactiveMessage}</p>}
-      {savedPretest && !current?.result && !current?.error && <p role="status">Teilnahmelinks werden geladen …</p>}
-      {savedPretest && current?.error && (
+      {!savedActive && <p role="status">{inactiveMessage}</p>}
+      {savedActive && !current?.result && !current?.error && <p role="status">Teilnahmelinks werden geladen …</p>}
+      {savedActive && current?.error && (
         <div>
           <p role={current.unavailable ? 'status' : 'alert'}>{current.error}</p>
           <Button type="button" buttonStyle="secondary" size="small" onClick={() => setRetry(value => value + 1)}>Erneut laden</Button>

@@ -76,7 +76,7 @@ test('standalone SVG escapes labels and cannot contain active markup', () => {
   assert.match(svg, /viewBox="0 0 1040/); assert.match(svg, /Beantwortet: 60/)
 })
 
-test('loader preserves access, selects minimal replies, filters test data/version, rejects truncation', async () => {
+test('loader preserves access, selects minimal replies, preserves response mode/version, rejects truncation', async () => {
   const calls: any[] = [], user = { id: 9, collection: 'users' as const, enabled: true, role: 'admin' as const, email: 'test@localhost.invalid', createdAt: '2026-10-09T12:00:00.000Z', updatedAt: '2026-10-09T12:00:00.000Z' }
   const payload = { find: async (args: any) => { calls.push(args); return args.collection === 'surveys'
     ? { docs: [{ ...meta, ...toStored(demoDefinition) }] } : { totalDocs: 60, docs: demoRecords() } } } as unknown as Payload
@@ -84,10 +84,25 @@ test('loader preserves access, selects minimal replies, filters test data/versio
   const result = await loadAnalysis(payload, 7, { user })
   assert.equal(result.responses, 60)
   for (const call of calls) { assert.equal(call.user, user); assert.equal(call.overrideAccess, false); assert.equal(call.depth, 0) }
-  assert.deepEqual(calls[1].select, { answers: true, createdAt: true })
-  assert.deepEqual(calls[1].where.and, [{ survey: { equals: 7 } }, { version: { equals: 'demo-1' } }, { testOnly: { equals: true } }])
+  assert.deepEqual(calls[1].select, { answers: true, createdAt: true, testOnly: true })
+  assert.deepEqual(calls[1].where.and, [{ survey: { equals: 7 } }, { version: { equals: 'demo-1' } }])
   const tooMany = { find: async (args: any) => args.collection === 'surveys' ? { docs: [{ ...meta, ...toStored(demoDefinition) }] } : { totalDocs: 1001, docs: [] as unknown[] } } as unknown as Payload
   await assert.rejects(loadAnalysis(tooMany, 7, { user }), /keine Teilergebnisse/)
   for (const input of ['0', '1 OR 1', '1e3', '-1', '2147483648', ['1']]) assert.equal(parseSurveyID(input), null)
   assert.equal(parseSurveyID('2147483647'), 2147483647)
+})
+
+
+test('analysis labels real and closed real data correctly and rejects machine analysis of live forms', async () => {
+  const real = analyze(def, [{ answers: {}, testOnly: false }], { ...meta, phase: 'closed' })
+  assert.equal(real.dataset, 'real')
+  assert.doesNotMatch(analysisSVG(real, real.sections[0].series[0]), /Nur Testdaten/)
+  assert.equal(analyze(def, [{ answers: {}, testOnly: false }, { answers: {}, testOnly: true }], meta).dataset, 'mixed')
+  const machine = { collection: 'users', id: 1, _strategy: 'mcp-api-key', enabled: true }
+  let responseReads = 0
+  const payload = { find: async (args: any) => args.collection === 'surveys'
+    ? { docs: [{ ...meta, ...toStored(def), phase: 'live' }] }
+    : (responseReads++, { docs: [] as unknown[], totalDocs: 0 }) } as unknown as Payload
+  await assert.rejects(loadAnalysis(payload, 7, { req: { user: machine } as any }), /auf Pretests beschränkt/)
+  assert.equal(responseReads, 0)
 })

@@ -9,6 +9,8 @@ import { canonicalJSON } from '../survey/privacy-crypto'
 import { introContentField, sectionContentField } from './content-fields'
 import { readBranding, surveyImageIDs } from '../survey/branding'
 import { answerFormats } from '../components/SurveyEditor.helpers'
+import { livePrivacyReady, realSurveysEnabled } from '../survey/participation'
+import { managesTeam } from '../auth/team'
 import { rememberSurveyArrays } from '../survey/persist-update'
 // MCP impersonates its owning team account; operational addresses stay private.
 const notificationAccess = ({ req }: { req: PayloadRequest }) => staff({ req }) &&
@@ -33,7 +35,7 @@ export const Surveys: CollectionConfig = {
     // List rows need only their visible columns; edit views still load the full instrument.
     enableListViewSelectAPI: true,
   }, disableDuplicate: true,
-  access: { read: staff, create: staff, update: staff, delete: () => false },
+  access: { read: ({ req }) => staff({ req }) ? req.user && '_strategy' in req.user && req.user._strategy === 'mcp-api-key' ? { phase: { in: ['draft', 'pretest'] } } : true : false, create: staff, update: staff, delete: () => false },
   hooks: { beforeChange: [async ({ data, originalDoc, operation, req }) => {
     if (operation === 'update' && originalDoc?.phase !== 'draft') {
       const instrument = ['title', 'slug', 'version', 'introduction', 'introContent', 'sections', 'privacy']
@@ -68,7 +70,14 @@ export const Surveys: CollectionConfig = {
     if (retentionReminders.enabled && (!privacy.enabled || !privacy.retentionYears)) throw new APIError('Für Fristerinnerungen zuerst Datenschutzinformation und eine Frist in ganzen Kalenderjahren vorbereiten.', 400)
     if (privacy.reviewed && privacyMissing(privacy).length) throw new APIError('Vor der fachlichen Bestätigung alle Datenschutzangaben ergänzen.', 400)
     if (merged.phase === 'pretest' && privacy.enabled && privacyMissing(privacy).length) throw new APIError('Vor dem Pretest mit Datenschutzinformation alle fehlenden Angaben ergänzen.', 400)
-    if (merged.phase === 'live') throw new APIError('Echte Erhebung ist im Prototyp gesperrt. Teilnahmeinformation und Betriebsfreigabe müssen zuerst umgesetzt werden.', 400)
+    if (merged.phase === 'live' && (operation === 'create' || originalDoc?.phase !== 'live')) {
+      if (!managesTeam(req.user)) throw new APIError('Nur Administratoren können echte Erhebungen freigeben.', 403)
+      if (!realSurveysEnabled()) throw new APIError('Echte Erhebungen sind durch den Betreiber nicht freigegeben.', 400)
+      if (!livePrivacyReady(merged.privacy)) throw new APIError('Vor der echten Erhebung vollständige Datenschutzangaben fachlich prüfen und bestätigen.', 400)
+    }
+    // Freeze the same normalized profile used by the participant receipt and
+    // atomic SQL guard; textarea whitespace must not make a reviewed form unusable.
+    if ((operation === 'create' || originalDoc?.phase === 'draft') && (data.privacy !== undefined || merged.phase === 'live')) data.privacy = privacy
     if (operation === 'update' && originalDoc?.id != null) rememberSurveyArrays(req, originalDoc.id, originalDoc)
     return data
   }] },
@@ -76,7 +85,7 @@ export const Surveys: CollectionConfig = {
     { name: 'title', label: 'Titel', type: 'text', required: true },
     { type: 'row', fields: [
         { name: 'version', label: 'Erhebungsfassung', type: 'text', required: true, unique: true },
-        { name: 'phase', label: 'Status', type: 'select', required: true, defaultValue: 'draft', options: [{ label: 'Entwurf', value: 'draft' }, { label: 'Pretest mit Testdaten', value: 'pretest' }, { label: 'Echte Erhebung (gesperrt)', value: 'live' }, { label: 'Geschlossen', value: 'closed' }] },
+        { name: 'phase', label: 'Status', type: 'select', required: true, defaultValue: 'draft', options: [{ label: 'Entwurf', value: 'draft' }, { label: 'Pretest mit Testdaten', value: 'pretest' }, { label: 'Echte Erhebung (Betreiberfreigabe erforderlich)', value: 'live' }, { label: 'Geschlossen', value: 'closed' }] },
     ] },
     // Keep tabs unnamed: names would nest stored fields and change the schema.
     { type: 'tabs', tabs: [
@@ -91,7 +100,7 @@ export const Surveys: CollectionConfig = {
         { name: 'privacy', label: 'Datenschutz und Teilnahme', type: 'group', fields: privacyFields },
       ] },
       { label: 'Veröffentlichen', description: 'Teilnahmelink, Vorschau und Downloads verwenden den gespeicherten Stand. Den Status oberhalb der Reiter ändern.', fields: [
-        { name: 'branding', label: 'Kopfzeile', type: 'group', admin: { description: 'Ersetzt die Marke oben links im Teilnahmeformular. Auch nach Beginn des Pretests änderbar; Fragen und Datenschutz bleiben eingefroren.' }, fields: [
+        { name: 'branding', label: 'Kopfzeile', type: 'group', admin: { description: 'Ersetzt die Marke oben links im Teilnahmeformular. Auch nach Beginn der Fassung änderbar; Fragen und Datenschutz bleiben eingefroren.' }, fields: [
           { name: 'mode', label: 'Anzeige oben links', type: 'select', defaultValue: 'default', options: [
             { value: 'default', label: 'Standard (Payload Forms / Sample)' }, { value: 'text', label: 'Eigener Text' }, { value: 'logo', label: 'Logo' },
           ] },
@@ -105,12 +114,12 @@ export const Surveys: CollectionConfig = {
       { label: 'E-Mail und Fristen', description: 'Betriebliche Einstellungen bleiben auch nach dem Start der Fassung änderbar.', fields: [
         { name: 'notifications', label: 'E-Mail bei neuen Einsendungen', type: 'group', access: { read: notificationAccess, create: notificationAccess, update: notificationAccess }, fields: [
           { name: 'enabled', label: 'Eingangshinweise per E-Mail senden', type: 'checkbox', defaultValue: false },
-          { name: 'recipients', label: 'Empfängeradressen', type: 'textarea', admin: { description: 'Eine E-Mail-Adresse je Zeile, höchstens zehn. Adressen müssen zuvor bei Cloudflare bestätigt und für diesen Versand registriert werden. Auch nach Beginn des Pretests änderbar.' } },
+          { name: 'recipients', label: 'Empfängeradressen', type: 'textarea', admin: { description: 'Eine E-Mail-Adresse je Zeile, höchstens zehn. Adressen müssen zuvor bei Cloudflare bestätigt und für diesen Versand registriert werden. Auch nach Beginn der Fassung änderbar.' } },
         ] },
         { name: 'notificationStatus', label: 'Versandstatus', type: 'ui', admin: { components: { Field: '/components/SurveyNotificationStatus#SurveyNotificationStatus' } } },
         { name: 'retentionReminders', label: 'Erinnerungen zur Aufbewahrungsfrist', type: 'group', access: { read: notificationAccess, create: notificationAccess, update: notificationAccess }, fields: [
           { name: 'enabled', label: 'Wöchentliche Fristerinnerungen an den Betriebskontakt senden', type: 'checkbox', defaultValue: false,
-            admin: { description: 'Ein zusammengefasster Hinweis pro Formular und UTC-Woche für gespeicherte Fristen innerhalb von 90 Tagen, innerhalb von 30 Tagen und abgelaufene Fristen. Auch nach Pretest-Beginn abschaltbar. Keine automatische Bereinigung.' } },
+            admin: { description: 'Ein zusammengefasster Hinweis pro Formular und UTC-Woche für gespeicherte Fristen innerhalb von 90 Tagen, innerhalb von 30 Tagen und abgelaufene Fristen. Auch nach Beginn der Fassung abschaltbar. Keine automatische Bereinigung.' } },
         ] },
         { name: 'retentionStatus', label: 'Fristprüfung und Erinnerungsstatus', type: 'ui', admin: { components: { Field: '/components/SurveyRetentionStatus#SurveyRetentionStatus' } } },
       ] },

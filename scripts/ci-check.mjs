@@ -1,7 +1,7 @@
 import { spawn, execFileSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { constants } from 'node:fs'
-import { copyFile, cp, lstat, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { copyFile, cp, lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -153,7 +153,7 @@ try {
   const env = {
     ...inherited,
     CI: '1', NEXT_TELEMETRY_DISABLED: '1', WRANGLER_SEND_METRICS: 'false',
-    PAYLOAD_SECRET: secret,
+    PAYLOAD_SECRET: secret, FORMS_REAL_SURVEYS_ENABLED: '1',
     PROTOTYPE_ADMIN_EMAIL: 'prototype@localhost.invalid',
     PROTOTYPE_ADMIN_PASSWORD: password,
     // getPlatformProxy takes the versioned Miniflare root directly; Wrangler's
@@ -183,23 +183,51 @@ try {
   const buildEnv = { ...env, LOCAL_PROTOTYPE: '0', DISABLE_SCHEMA_PUSH: '1', SURVEY_ORIGIN: devOrigin, SURVEY_ORIGINS: `${devOrigin},${devSecondOrigin}` }
   // Exercise the actual installer command with valid, entirely fictional
   // resources. No provider token is inherited; build bindings must stay local.
-  await writeFile(join(source, 'wrangler.install.jsonc'), JSON.stringify(installFixture()), { mode: 0o600 })
+  const installation = installFixture()
+  installation.env.internal.vars.FORMS_REAL_SURVEYS_ENABLED = '1'
+  await writeFile(join(source, 'wrangler.install.jsonc'), JSON.stringify(installation), { mode: 0o600 })
   await run('installation Worker build with local D1 bindings', 'npm', ['run', 'build:cloudflare'],
     source, { ...buildEnv, PAYLOAD_FORMS_CONFIG: 'wrangler.install.jsonc' }, 600000)
   const workerPort = await freePort()
   const workerOrigin = `http://127.0.0.1:${workerPort}`
   const workerSecondOrigin = `http://localhost:${workerPort}`
   const workerEnv = { ...buildEnv, FORMS_LOCAL_D1_PATH: join(workerPersistence, 'v3'), SURVEY_ORIGIN: workerOrigin, SURVEY_ORIGINS: `${workerOrigin},${workerSecondOrigin}`, MAIL_ORIGIN: workerOrigin, TEST_SCHEDULED: '1' }
-  const worker = launch('local Worker runtime', join(source, 'node_modules/.bin/wrangler'), [
+  const workerArgs = [
     'dev', '--local', '--test-scheduled', '--ip', '127.0.0.1', '--port', String(workerPort), '--persist-to', workerPersistence,
     '--var', `PAYLOAD_SECRET:${secret}`, '--var', `SURVEY_ORIGIN:${workerOrigin}`, '--var', `SURVEY_ORIGINS:${workerEnv.SURVEY_ORIGINS}`,
-    '--var', 'LOCAL_PROTOTYPE:0', '--var', 'DISABLE_SCHEMA_PUSH:1', '--var', 'FORMS_D1_REMOTE:0',
+    '--var', 'FORMS_REAL_SURVEYS_ENABLED:1', '--var', 'LOCAL_PROTOTYPE:0', '--var', 'DISABLE_SCHEMA_PUSH:1', '--var', 'FORMS_D1_REMOTE:0',
     '--var', 'MAIL_ENABLED:1', '--var', 'MAIL_FROM:forms@localhost.invalid', '--var', `MAIL_ORIGIN:${workerOrigin}`,
     '--var', `MAIL_ALLOWED_RECIPIENTS:${workerEnv.MAIL_ALLOWED_RECIPIENTS}`, '--var', 'OPS_ALERT_RECIPIENT:notify@localhost.invalid', '--var', 'MAIL_MONTHLY_LIMIT:5', '--var', 'MAIL_LOCAL_TEST:1',
-  ], source, workerEnv)
+  ]
+  const worker = launch('local Worker runtime', join(source, 'node_modules/.bin/wrangler'), workerArgs, source, workerEnv)
   await ready(worker, workerOrigin)
   await run('Worker HTTP checks', process.execPath, ['--import', 'tsx', 'tests/http-check.ts'],
     source, { ...workerEnv, TEST_BASE_URL: workerOrigin, TEST_SECOND_ORIGIN: workerSecondOrigin, TEST_FIRST_USER: '1' })
+  await stop(worker)
+  // Keep the enabled build and persisted live fixture. Shut collection down
+  // with explicit off, malformed, and truly absent runtime bindings.
+  for (const runtimeFlag of ['0', 'true', undefined]) {
+    const disabledEnv = { ...workerEnv }
+    let disabledArgs = workerArgs.map(value => value === 'FORMS_REAL_SURVEYS_ENABLED:1' ? `FORMS_REAL_SURVEYS_ENABLED:${runtimeFlag}` : value)
+    if (runtimeFlag === undefined) {
+      delete disabledEnv.FORMS_REAL_SURVEYS_ENABLED
+      const runtimeConfig = JSON.parse(await readFile(join(source, 'wrangler.jsonc'), 'utf8'))
+      delete runtimeConfig.vars?.FORMS_REAL_SURVEYS_ENABLED
+      for (const environment of Object.values(runtimeConfig.env || {})) delete environment.vars?.FORMS_REAL_SURVEYS_ENABLED
+      const runtimePath = join(source, 'wrangler.runtime-missing.jsonc')
+      await writeFile(runtimePath, JSON.stringify(runtimeConfig))
+      const flagIndex = disabledArgs.indexOf('FORMS_REAL_SURVEYS_ENABLED:undefined')
+      if (flagIndex < 1 || disabledArgs[flagIndex - 1] !== '--var') throw new Error('Expected explicit runtime flag pair')
+      disabledArgs.splice(flagIndex - 1, 2)
+      disabledArgs.push('--config', runtimePath)
+    } else disabledEnv.FORMS_REAL_SURVEYS_ENABLED = runtimeFlag
+    const disabledWorker = launch(`runtime-disabled Worker (${runtimeFlag ?? 'missing'})`, join(source, 'node_modules/.bin/wrangler'),
+      disabledArgs, source, disabledEnv)
+    await ready(disabledWorker, workerOrigin)
+    await run(`real-survey runtime shutdown checks (${runtimeFlag ?? 'missing'})`, process.execPath, ['--import', 'tsx', 'tests/http-real-disabled.ts'],
+      source, { ...disabledEnv, TEST_BASE_URL: workerOrigin })
+    await stop(disabledWorker)
+  }
   console.log('PASS: disposable local development and Worker integration checks')
 } catch (error) {
   console.error(sanitize(error.stack || error))

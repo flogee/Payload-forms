@@ -1,9 +1,9 @@
 import type { CollectionConfig } from 'payload'
 import { staff } from './Users'
 export const Responses: CollectionConfig = {
-  slug: 'responses', labels: { singular: 'Testantwort', plural: 'Testantworten' },
-  admin: { useAsTitle: 'submissionKey', defaultColumns: ['survey', 'version', 'createdAt'] },
-  access: { read: staff, create: () => false, update: () => false, delete: () => false },
+  slug: 'responses', labels: { singular: 'Antwort', plural: 'Antworten' },
+  admin: { useAsTitle: 'submissionKey', defaultColumns: ['survey', 'version', 'testOnly', 'createdAt'] },
+  access: { read: ({ req }) => staff({ req }) ? req.user && '_strategy' in req.user && req.user._strategy === 'mcp-api-key' ? { testOnly: { equals: true } } : true : false, create: () => false, update: () => false, delete: () => false },
   fields: [
     { name: 'submissionKey', type: 'text', unique: true, required: true },
     { name: 'survey', type: 'relationship', relationTo: 'surveys', required: true },

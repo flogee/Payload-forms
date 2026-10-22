@@ -1,6 +1,6 @@
 # Security
 
-This initial public release is a pretest application, not a certification for sensitive or regulated data collection. The maintainers do not promise that publishing source eliminates security risks. Operators remain responsible for their hosting, account permissions, privacy notices, backups, access administration and updates.
+This application supports fictional pretests and explicitly gated real surveys. It is not a certification for sensitive or regulated data collection. The maintainers do not promise that publishing source eliminates security risks. Operators remain responsible for their hosting, account permissions, privacy notices, backups, access administration and updates.
 
 ## Reporting a vulnerability
 
@@ -51,7 +51,7 @@ corresponding Runs separately. No rollout or real-data acceptance is implied.
 
 ## Data handling and recovery
 
-Only fictional-data pretests are enabled. The sample is synthetic and is not an original research instrument. Published questionnaire/privacy versions are frozen; contacts are stored separately. Exports and reports need team authorization and may require additional privacy review before sharing.
+Fictional-data pretests are the default. Real collection additionally requires the exact operator flag `FORMS_REAL_SURVEYS_ENABLED=1`, complete reviewed privacy settings and human-administrator activation. Disabling the runtime flag stops new real participation without changing stored data. Missing/malformed runtime flags fail closed even if a build previously enabled collection. QA/evaluation runs and machine clients stay fictional/pretest-only. The sample is synthetic and is not an original research instrument. Published questionnaire/privacy versions are frozen; contacts are stored separately. Optional live contacts need separate consent and a valid email; their name is optional. Participation without login does not guarantee anonymity, and separated contacts remain linkable to their response for follow-up. Exports and reports need team authorization and may require additional privacy review before sharing.
 
 Retention reminders do not automatically delete or anonymize data. Before a remote migration, preserve a verified recovery point and an operator-managed backup strategy. Code rollback does not undo schema changes; budget reservations must not be blindly restored to zero. Test recovery on a disposable installation.
 

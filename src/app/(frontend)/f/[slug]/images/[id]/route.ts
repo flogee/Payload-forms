@@ -1,3 +1,4 @@
+import { participationMode } from '@/survey/participation'
 import { getPayload } from 'payload'
 import config, { cloudflareEnvironment } from '@payload-config'
 import { fromStored } from '@/survey/storage'
@@ -11,9 +12,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   const { slug, id } = await params
   if (!validSurveySlug(slug) || !/^[1-9][0-9]{0,9}$/.test(id)) return missing()
   const payload = await getPayload({ config })
-  const found = await payload.find({ collection: 'surveys', where: { slug: { equals: slug }, phase: { equals: 'pretest' } }, limit: 1, depth: 0 })
+  const found = await payload.find({ collection: 'surveys', where: { slug: { equals: slug }, phase: { in: ['pretest', 'live'] } }, limit: 1, depth: 0 })
   const survey = found.docs[0]
-  if (!survey || !surveyImageIDs(fromStored(survey), readBranding(survey.branding)).includes(Number(id))) return missing()
+  if (!survey || !participationMode(survey) || !surveyImageIDs(fromStored(survey), readBranding(survey.branding)).includes(Number(id))) return missing()
   const media = await payload.find({ collection: 'media', where: { id: { equals: Number(id) } }, limit: 1, depth: 0, overrideAccess: true })
   const image = media.docs[0], key = `${IMAGE_PREFIX}/${image?.filename}`
   if (!image || !validImageKey(key) || !['image/png', 'image/jpeg', 'image/webp'].includes(image.mimeType)) return missing()

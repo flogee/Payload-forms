@@ -1,11 +1,13 @@
-import type { ParticipantContact, PrivacyReceipt, ErasureReason } from './privacy'
+import { readPrivacySettings } from './privacy'
+import type { ParticipantContact, PrivacyReceipt, PrivacySettings, ErasureReason } from './privacy'
+import { livePrivacyReady, realSurveysEnabled, type SubmissionMode } from './participation'
 import type { Answers, Definition } from './types'
 import { digest } from './privacy-crypto'
 import { retentionReviewDueAt } from './retention-policy'
 
 export type SQLValue = string | number | null
 export type Statement = { sql: string; values: SQLValue[] }
-type StoredResponse = { id: number; submission_digest: string | null; version: string; answers: string; privacy_receipt: string | null; evaluation_run_id?: number | null }
+type StoredResponse = { test_only: number; id: number; submission_digest: string | null; version: string; answers: string; privacy_receipt: string | null; evaluation_run_id?: number | null }
 type StoredErasure = {
   response_key: string; survey_id: number; version: string; reason: ErasureReason
   erased_by_id: number; erased_at: string; retention_until: string
@@ -49,12 +51,14 @@ export async function readResponseExport(db: ResponseDatabase, id: number, expec
       createdAt: row.created_at, durationSeconds: row.duration_seconds, answers: JSON.parse(row.answers),
       instrument: JSON.parse(row.instrument), privacyReceipt: row.privacy_receipt ? JSON.parse(row.privacy_receipt) : null,
       retentionReviewDueAt: row.retention_review_due_at },
-    contact: row.contact_name ? { name: row.contact_name, email: row.contact_email,
+    contact: row.contact_email ? { name: row.contact_name, email: row.contact_email,
       privacyReceipt: row.contact_receipt ? JSON.parse(row.contact_receipt) : null } : null,
   }
 }
 
 export type Submission = {
+  mode?: SubmissionMode // Omitted only for legacy fictional pretest callers.
+  livePrivacy?: PrivacySettings // Current validated profile, compared atomically for live inserts.
   key: string; erasureKey: string; surveyID: number; version: string; digest: string
   durationSeconds: number; answers: Answers; instrument: Definition
   receipt?: PrivacyReceipt; contact?: ParticipantContact; now: string
@@ -64,32 +68,39 @@ export type Submission = {
 }
 
 export function submissionStatements(input: Submission): Statement[] {
+  const live = input.mode === 'live', testOnly = live ? 0 : 1
+  const privacy = live && input.livePrivacy ? Object.entries(readPrivacySettings(input.livePrivacy)) : []
+  const privacyDefaults = readPrivacySettings({})
   const statements: Statement[] = [{
     sql: `INSERT INTO responses
       (submission_key, survey_id, version, test_only, duration_seconds, answers, instrument,
        privacy_receipt, submission_digest, notification_reference, retention_review_due_at, created_at, updated_at${input.evaluationRun ? ', evaluation_run_id' : ''})
-      SELECT ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?${input.evaluationRun ? ', ?' : ''}
-      WHERE EXISTS (SELECT 1 FROM surveys WHERE id = ? AND version = ? AND phase = 'pretest')
+      SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?${input.evaluationRun ? ', ?' : ''}
+      WHERE EXISTS (SELECT 1 FROM surveys WHERE id = ? AND version = ? AND phase = ?
+        ${live ? `AND privacy_enabled = 1 AND privacy_reviewed = 1 ${privacy.map(([key]) => `AND coalesce(privacy_${key.replace(/[A-Z]/g, letter => '_' + letter.toLowerCase())}, ?) = ?`).join(' ')}` : ''})
       AND NOT EXISTS (SELECT 1 FROM response_erasure_logs WHERE response_key = ?)
       ${input.evaluationRun ? `AND EXISTS (SELECT 1 FROM evaluation_runs WHERE id = ? AND key = ? AND survey_id = ?
         AND version = ? AND status = 'open' AND julianday(expires_at) > julianday(?))` : ''}
       ON CONFLICT (submission_key) DO NOTHING`,
-    values: [input.key, input.surveyID, input.version, input.durationSeconds,
+    values: [input.key, input.surveyID, input.version, testOnly, input.durationSeconds,
       JSON.stringify(input.answers), JSON.stringify(input.instrument),
       input.receipt ? JSON.stringify(input.receipt) : null, input.digest, input.notificationReference ?? null,
       retentionReviewDueAt(input.now, input.retentionYears ?? 0), input.now, input.now,
-      ...(input.evaluationRun ? [input.evaluationRun.id] : []), input.surveyID, input.version, input.erasureKey,
+      ...(input.evaluationRun ? [input.evaluationRun.id] : []), input.surveyID, input.version, live ? 'live' : 'pretest', ...privacy.flatMap(([key, value]) => {
+        const fallback = privacyDefaults[key as keyof PrivacySettings]
+        return [typeof fallback === 'boolean' ? Number(fallback) : fallback, typeof value === 'boolean' ? Number(value) : value]
+      }), input.erasureKey,
       ...(input.evaluationRun ? [input.evaluationRun.id, input.evaluationRun.key, input.surveyID, input.version, input.now] : [])],
   }]
   if (input.contact) statements.push({
     sql: `INSERT INTO response_contacts
       (response_id, name, email, test_only, privacy_receipt, created_at, updated_at)
-      SELECT id, ?, ?, 1, ?, ?, ? FROM responses
-      WHERE submission_key = ? AND submission_digest = ?
+      SELECT id, ?, ?, ?, ?, ?, ? FROM responses
+      WHERE submission_key = ? AND submission_digest = ? AND test_only = ?
       AND NOT EXISTS (SELECT 1 FROM response_erasure_logs WHERE response_key = ?)
       ON CONFLICT (response_id) DO NOTHING`,
-    values: [input.contact.name, input.contact.email, JSON.stringify(input.receipt), input.now, input.now,
-      input.key, input.digest, input.erasureKey],
+    values: [input.contact.name, input.contact.email, testOnly, JSON.stringify(input.receipt), input.now, input.now,
+      input.key, input.digest, testOnly, input.erasureKey],
   })
   // Enqueue in the same transaction, only for this new immutable response.
   // A duplicate submission cannot notify newly added recipients retroactively.
@@ -105,7 +116,7 @@ export function submissionStatements(input: Submission): Statement[] {
     values: [recipient, input.now, input.now, input.now, input.key, input.digest, input.notificationReference ?? null, recipient],
   })
   statements.push({
-    sql: `SELECT id, submission_digest, version, answers, privacy_receipt${input.evaluationRun ? ', evaluation_run_id' : ''} FROM responses WHERE submission_key = ?`, values: [input.key],
+    sql: `SELECT id, test_only, submission_digest, version, answers, privacy_receipt${input.evaluationRun ? ', evaluation_run_id' : ''} FROM responses WHERE submission_key = ?`, values: [input.key],
   }, {
     sql: 'SELECT response_key FROM response_erasure_logs WHERE response_key = ?', values: [input.erasureKey],
   })
@@ -113,10 +124,12 @@ export function submissionStatements(input: Submission): Statement[] {
 }
 
 export async function saveSubmission(db: ResponseDatabase, input: Submission) {
+  if (input.mode === 'live' && (!realSurveysEnabled() || !input.receipt || !livePrivacyReady(input.livePrivacy) || input.evaluationRun)) return { state: 'closed' as const }
   const result = await runBatch(db, submissionStatements({ ...input, notificationReference: input.notificationReference ?? crypto.randomUUID() }))
   const row = result[result.length - 2].results[0] as StoredResponse | undefined
   if (result[result.length - 1].results.length) return { state: 'erased' as const }
   if (!row) return { state: 'closed' as const }
+  if (row.test_only !== (input.mode === 'live' ? 0 : 1)) return { state: 'conflict' as const }
   if (input.evaluationRun && row.evaluation_run_id !== input.evaluationRun.id) return { state: 'conflict' as const }
   if (row.submission_digest !== input.digest) {
     // Pre-migration test answers have no digest. Accept only an unchanged retry
