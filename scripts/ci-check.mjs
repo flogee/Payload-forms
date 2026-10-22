@@ -1,7 +1,7 @@
 import { spawn, execFileSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { constants } from 'node:fs'
-import { copyFile, cp, lstat, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { copyFile, cp, lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
