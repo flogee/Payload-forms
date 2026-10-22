@@ -85,3 +85,18 @@ test('setup is offline, creates private local-only secrets and refuses to overwr
     await assert.rejects(setupInstall('cloudflare', root), { code: 'EEXIST' })
   } finally { await rm(root, { recursive: true, force: true }) }
 })
+
+
+test('real collection is an exact explicit install selection and never inherits a shell opt-in', () => {
+  const config = installFixture() as any
+  const selected = () => ({ ...validateInstallConfig(config), configPath: '/tmp/fixture/wrangler.install.jsonc' })
+  assert.equal(productionEnvironment(selected(), { PAYLOAD_SECRET: secret, FORMS_REAL_SURVEYS_ENABLED: '1' }).FORMS_REAL_SURVEYS_ENABLED, '0')
+  for (const value of ['1', '0']) {
+    config.env.internal.vars.FORMS_REAL_SURVEYS_ENABLED = value
+    assert.equal(productionEnvironment(selected(), { PAYLOAD_SECRET: secret }).FORMS_REAL_SURVEYS_ENABLED, value)
+  }
+  for (const value of ['true', '', 1, false, null]) {
+    config.env.internal.vars.FORMS_REAL_SURVEYS_ENABLED = value
+    assert.throws(selected, /FORMS_REAL_SURVEYS_ENABLED/)
+  }
+})

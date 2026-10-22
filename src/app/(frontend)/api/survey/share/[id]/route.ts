@@ -1,3 +1,4 @@
+import { participationMode } from '@/survey/participation'
 import { isTeamUser } from '@/auth/team'
 import { getPayload } from 'payload'
 import config from '@payload-config'
@@ -12,12 +13,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params
   if (!/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id))) return json({ error: 'Ungültige Formularnummer.' }, 400)
   const survey = await payload.findByID({ collection: 'surveys', id: Number(id), user, overrideAccess: false, depth: 0,
-    select: { title: true, slug: true, phase: true } }).catch((error: unknown): null => {
+    select: { title: true, slug: true, phase: true, privacy: true } }).catch((error: unknown): null => {
     if (error && typeof error === 'object' && 'status' in error && error.status === 404) return null
     throw error
   })
   if (!survey) return json({ error: 'Formular nicht gefunden.' }, 404)
-  if (survey.phase !== 'pretest') return json({ error: 'Teilnahmelinks sind nach dem Speichern als Pretest mit Testdaten verfügbar. Geschlossene Formulare nehmen keine Antworten mehr an.' }, 409)
+  if (!participationMode(survey)) return json({ error: 'Teilnahmelinks sind für freigegebene Pretests oder echte Erhebungen verfügbar. Geschlossene Formulare nehmen keine Antworten mehr an.' }, 409)
   const links = participationLinks(survey.id, survey.slug, process.env)
   if (!links) return json({ error: 'Die Formularadressen oder die Linkkennung sind noch nicht gültig konfiguriert.' }, 503)
   const query = new URL(req.url).searchParams, format = query.get('format'), requestedOrigin = query.get('origin')

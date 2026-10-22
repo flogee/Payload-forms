@@ -19,7 +19,7 @@ export function analysisSVG(report: AnalysisReport, series: AnalysisSeries): str
   let y = 52
   const elements: string[] = []
   const text = (value: string, x: number, at: number, size = 16, fill = '#193b39') => `<text x="${x}" y="${at}" font-size="${size}" fill="${fill}">${xml(value)}</text>`
-  elements.push(text('Payload Forms · Interne Team-Auswertung · Nur Testdaten', 36, y, 15, '#60716d')); y += 36
+  elements.push(text(`Payload Forms · Interne Team-Auswertung · ${report.dataset === 'test' ? 'Nur Testdaten' : report.dataset === 'real' ? 'Erhebungsdaten' : 'Test- und Erhebungsdaten'}`, 36, y, 15, '#60716d')); y += 36
   for (const line of wrap(report.survey.title, 72)) { elements.push(text(line, 36, y, 24)); y += 30 }
   elements.push(text(`Fassung ${report.survey.version} · ${report.responses} Antworten`, 36, y, 16)); y += 35
   for (const line of wrap(series.label, 85)) { elements.push(text(line, 36, y, 20)); y += 25 }
@@ -49,5 +49,5 @@ export function analysisSVG(report: AnalysisReport, series: AnalysisSeries): str
   elements.push(text('Interne Fallzahlen können klein sein. Vor Weitergabe prüfen; MCP-/Berichtsdaten nutzen.', 36, y, 14, '#60716d')); y += 24
   if (report.survey.phase === 'demo') { elements.push(text('Vollständig fiktives Beispiel; keine Ergebnisse einer realen Erhebung.', 36, y, 14, '#60716d')); y += 24 }
   elements.push(text(`Stand: ${report.generatedAt} · ${series.id}`, 36, y, 12, '#60716d')); y += 28
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="${y}" viewBox="0 0 1040 ${y}" role="img" aria-labelledby="title desc"><title id="title">${xml(series.label)}</title><desc id="desc">${xml(`${report.survey.title}, Fassung ${report.survey.version}. ${series.answered} beantwortete Angaben. Nur Testdaten.`)}</desc><rect width="1040" height="${y}" fill="#faf9f5"/><g font-family="Arial, sans-serif">${elements.join('')}</g></svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="${y}" viewBox="0 0 1040 ${y}" role="img" aria-labelledby="title desc"><title id="title">${xml(series.label)}</title><desc id="desc">${xml(`${report.survey.title}, Fassung ${report.survey.version}. ${series.answered} beantwortete Angaben. ${report.dataset === 'test' ? 'Nur Testdaten.' : 'Geschützte Team-Auswertung.'}`)}</desc><rect width="1040" height="${y}" fill="#faf9f5"/><g font-family="Arial, sans-serif">${elements.join('')}</g></svg>`
 }

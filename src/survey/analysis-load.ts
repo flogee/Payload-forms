@@ -27,13 +27,15 @@ export async function loadAnalysis(payload: Payload, surveyID: number, scope: Sc
     select: { title: true, slug: true, version: true, phase: true, introduction: true, sections: true },
   })
   const survey = found.docs[0]
+  const user = scope.req?.user ?? scope.user
+  if (survey && user && '_strategy' in user && user._strategy === 'mcp-api-key' && survey.phase !== 'pretest') throw new AnalysisError('Maschinenauswertung ist auf Pretests beschränkt.', 403)
   if (!survey) throw new AnalysisError('Fragebogen nicht gefunden.', 404)
   const rows = await payload.find({ collection: 'responses', ...scope, overrideAccess: false, depth: 0, limit: ANALYSIS_LIMIT,
-    where: { and: [{ survey: { equals: survey.id } }, { version: { equals: survey.version } }, { testOnly: { equals: true } }] },
+    where: { and: [{ survey: { equals: survey.id } }, { version: { equals: survey.version } }] },
     // Do not load instrument snapshots, privacy receipts or contact references.
-    select: { answers: true, createdAt: true },
+    select: { answers: true, createdAt: true, testOnly: true },
   })
-  if (rows.totalDocs > ANALYSIS_LIMIT) throw new AnalysisError('Mehr als 1.000 Testantworten: paginierte Auswertung erforderlich. Es werden keine Teilergebnisse angezeigt.', 422)
-  return analyze(fromStored(survey), rows.docs.map(r => ({ answers: r.answers as Answers, createdAt: r.createdAt })),
+  if (rows.totalDocs > ANALYSIS_LIMIT) throw new AnalysisError('Mehr als 1.000 Antworten: paginierte Auswertung erforderlich. Es werden keine Teilergebnisse angezeigt.', 422)
+  return analyze(fromStored(survey), rows.docs.map(r => ({ answers: r.answers as Answers, createdAt: r.createdAt, testOnly: r.testOnly })),
     { id: survey.id, title: survey.title, slug: survey.slug, version: survey.version, phase: survey.phase })
 }

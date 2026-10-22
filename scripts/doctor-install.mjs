@@ -7,6 +7,7 @@ try {
   if (mode === 'cloudflare') {
     const install = await readInstallConfig()
     productionEnvironment(install)
+    console.log(`Real surveys: ${install.internal.vars.FORMS_REAL_SURVEYS_ENABLED === '1' ? 'operator-enabled; each live version still requires complete reviewed privacy settings' : 'disabled (default)'}. QA/evaluation runs remain fictional only.`)
     console.log('PASS: selected production configuration and stable secret are present; budgets, warnings, origins and Access scope validated offline.')
     console.log('Before release: provision the same PAYLOAD_SECRET and ACCESS_SYNC_TOKEN in this Worker, verify sender/domain DNS and recipient delivery, confirm private EU R2 and backup D1 before migrations. Release verifies Access, recipient verification and Worker secret names online.')
   } else if (mode === 'local') {

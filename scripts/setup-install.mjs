@@ -8,7 +8,7 @@ export async function setupInstall(mode, root = projectRoot) {
   if (mode === 'local') {
     await writeFile(join(root, '.env.local'), [
       `PAYLOAD_SECRET=${randomBytes(48).toString('hex')}`,
-      'LOCAL_PROTOTYPE=0', 'SURVEY_ORIGIN=http://127.0.0.1:3212',
+      'LOCAL_PROTOTYPE=0', 'FORMS_REAL_SURVEYS_ENABLED=0', 'SURVEY_ORIGIN=http://127.0.0.1:3212',
       'MAIL_ENABLED=1', 'MAIL_LOCAL_TEST=1', 'MAIL_ORIGIN=http://127.0.0.1:3212', 'MAIL_FROM=forms@localhost.invalid',
       'MAIL_ALLOWED_RECIPIENTS=notify@localhost.invalid,second@localhost.invalid',
       'OPS_ALERT_RECIPIENT=notify@localhost.invalid', 'MAIL_MONTHLY_LIMIT=500', '',

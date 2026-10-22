@@ -26,7 +26,7 @@ export function SurveyPrivacyStatus() {
   return <section className="survey-privacy-status" aria-labelledby={headingID}>
     <h3 id={headingID}>Datenschutzstatus</h3>
     <p>Es gelten ausschließlich die gespeicherten Angaben. Änderungen werden erst nach dem Speichern berücksichtigt.</p>
-    <p><strong>Echte Erhebungen bleiben gesperrt.</strong> Ein vollständiges oder als geprüft markiertes Datenschutzprofil ist keine Erhebungsfreigabe.</p>
+    <p><strong>Echte Erhebungen benötigen die Betreiberfreigabe.</strong> Zusätzlich müssen Administratoren ein vollständiges, fachlich geprüftes Datenschutzprofil bestätigen und den Status „Echte Erhebung“ speichern.</p>
     {id == null ? <p role="status">Zuerst den Fragebogen speichern.</p> : <>
       <p role="status">{missing.length ? 'Das Datenschutzprofil ist noch unvollständig.' : 'Das gespeicherte Datenschutzprofil ist vollständig.'}</p>
       {!!missing.length && <ul>{missing.map(label => <li key={label}>{label}</li>)}</ul>}

@@ -2,13 +2,13 @@
 
 An MIT-licensed, self-hosted questionnaire application built with Payload CMS, Next.js, and Cloudflare Workers. Maintained by Florian Bauernfeind (Entribe).
 
-Create versioned questionnaires, share a participation link or QR code, and review responses in a protected administration area. The participant interface is currently German. This initial public release supports **pretests with fictional data**; real research collection is deliberately disabled.
+Create versioned questionnaires, share a participation link or QR code, and review responses in a protected administration area. The participant interface is currently German. Fictional-data pretests are enabled by default. Operators can explicitly enable real surveys; each live version additionally requires complete, reviewed privacy settings and activation by an administrator.
 
 ## What is included
 
 - Twelve response formats: single and multiple choice, short and long text, numbers, numeric rows, responsive Likert matrices, repeatable lists, sliders, stars, smileys, and ranking. Matrices use clickable radio scales on wide screens and labeled choices under each statement on narrow screens; each row can be cleared independently.
 - A section-based editor with rich text, image blocks, and per-questionnaire header branding.
-- Anonymous participation links with protected team administration, individual responses, exports, and analysis.
+- Participation links without login with protected team administration, individual responses, exports, and analysis.
 - Versioned privacy notices, separate contact records, retention reminders, questionnaire duplication and JSON/Markdown/CSV downloads.
 - Charts and SVG downloads, plus limited MCP tools for drafts and reduced statistical reports.
 - Atomic usage budgets, rate limits, bounded uploads and request bodies, and bounded operational warnings.
@@ -46,7 +46,7 @@ Each operator supplies their own account, domains, database, private image bucke
 
 Workers/D1/R2/Access bindings are required for the documented Cloudflare deployment. Running the Next.js development server on a laptop is not a standalone production server. General Docker/VPS production support is future work.
 
-Usage limits reduce specific application operations; they are not an account-wide spending cap. Other projects, direct provider access, rejected requests, and database checks can still incur provider usage. Privacy notices and retention reminders require operator configuration; automatic anonymization is not implemented. See [SECURITY.md](SECURITY.md).
+Usage limits reduce specific application operations; they are not an account-wide spending cap. Other projects, direct provider access, rejected requests, and database checks can still incur provider usage. Real collection requires `FORMS_REAL_SURVEYS_ENABLED=1` in the selected installation configuration; see [the activation and consent contract](INSTALL.md#real-surveys). Disabling the flag stops real participation without changing stored data. QA/evaluation runs and machine access remain fictional only. Participation without login is not a promise of anonymity. Privacy notices and retention reminders require operator configuration; automatic anonymization is not implemented. See [SECURITY.md](SECURITY.md).
 
 ## License and attribution
 

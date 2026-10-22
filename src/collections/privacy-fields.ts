@@ -2,7 +2,7 @@ import type { Field } from 'payload'
 
 export const privacyFields: Field[] = [
   { name: 'enabled', label: 'Datenschutzinformation für diese Fassung vorbereiten', type: 'checkbox', defaultValue: false },
-  { name: 'noticeVersion', label: 'Fassung der Datenschutzinformation', type: 'text', maxLength: 100, admin: { description: 'Eigene Kennung, zum Beispiel sample-datenschutz-v1. Nach Beginn des Pretests unveränderlich.' } },
+  { name: 'noticeVersion', label: 'Fassung der Datenschutzinformation', type: 'text', maxLength: 100, admin: { description: 'Eigene Kennung, zum Beispiel sample-datenschutz-v1. Nach Beginn der Fassung unveränderlich.' } },
   { name: 'controllerName', label: 'Vollständiger Name des Verantwortlichen', type: 'text', maxLength: 300 },
   { name: 'controllerAddress', label: 'Anschrift des Verantwortlichen', type: 'textarea', maxLength: 1000 },
   { name: 'contactEmail', label: 'Kontakt für Datenschutz und Betroffenenrechte', type: 'email' },
@@ -22,7 +22,7 @@ export const privacyFields: Field[] = [
   { name: 'retention', label: 'Aufbewahrung und Löschung der Antworten', type: 'textarea', maxLength: 4000 },
   { name: 'retentionYears', label: 'Fristprüfung nach Kalenderjahren ab Einsendung', type: 'number', min: 0, max: 20, defaultValue: 0,
     validate: (value: unknown) => value == null || (typeof value === 'number' && Number.isInteger(value)) || 'Bitte ganze Kalenderjahre eintragen.',
-    admin: { description: '0 = keine automatische Fristprüfung. Für neue Einsendungen wird die Frist unveränderlich gespeichert. Muss zum Aufbewahrungstext passen; nach Beginn des Pretests unveränderlich. Keine automatische Löschung oder Anonymisierung.' } },
+    admin: { description: '0 = keine automatische Fristprüfung. Für neue Einsendungen wird die Frist unveränderlich gespeichert. Muss zum Aufbewahrungstext passen; nach Beginn der Fassung unveränderlich. Keine automatische Löschung oder Anonymisierung.' } },
   { name: 'rights', label: 'Betroffenenrechte, Widerruf und Kontaktverfahren', type: 'textarea', maxLength: 4000 },
   { name: 'complaintAuthority', label: 'Zuständige Datenschutz-Aufsichtsbehörde', type: 'textarea', maxLength: 1000 },
   { name: 'contactMode', label: 'Kontaktangaben für individuelle Rückmeldungen', type: 'select', defaultValue: 'none', options: [

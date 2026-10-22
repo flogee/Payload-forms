@@ -363,7 +363,7 @@ export interface Survey {
   privacy?: {
     enabled?: boolean | null;
     /**
-     * Eigene Kennung, zum Beispiel sample-datenschutz-v1. Nach Beginn des Pretests unveränderlich.
+     * Eigene Kennung, zum Beispiel sample-datenschutz-v1. Nach Beginn der Fassung unveränderlich.
      */
     noticeVersion?: string | null;
     controllerName?: string | null;
@@ -381,7 +381,7 @@ export interface Survey {
     internationalTransfers?: string | null;
     retention?: string | null;
     /**
-     * 0 = keine automatische Fristprüfung. Für neue Einsendungen wird die Frist unveränderlich gespeichert. Muss zum Aufbewahrungstext passen; nach Beginn des Pretests unveränderlich. Keine automatische Löschung oder Anonymisierung.
+     * 0 = keine automatische Fristprüfung. Für neue Einsendungen wird die Frist unveränderlich gespeichert. Muss zum Aufbewahrungstext passen; nach Beginn der Fassung unveränderlich. Keine automatische Löschung oder Anonymisierung.
      */
     retentionYears?: number | null;
     rights?: string | null;
@@ -400,7 +400,7 @@ export interface Survey {
     reviewed?: boolean | null;
   };
   /**
-   * Ersetzt die Marke oben links im Teilnahmeformular. Auch nach Beginn des Pretests änderbar; Fragen und Datenschutz bleiben eingefroren.
+   * Ersetzt die Marke oben links im Teilnahmeformular. Auch nach Beginn der Fassung änderbar; Fragen und Datenschutz bleiben eingefroren.
    */
   branding?: {
     mode?: ('default' | 'text' | 'logo') | null;
@@ -420,13 +420,13 @@ export interface Survey {
   notifications?: {
     enabled?: boolean | null;
     /**
-     * Eine E-Mail-Adresse je Zeile, höchstens zehn. Adressen müssen zuvor bei Cloudflare bestätigt und für diesen Versand registriert werden. Auch nach Beginn des Pretests änderbar.
+     * Eine E-Mail-Adresse je Zeile, höchstens zehn. Adressen müssen zuvor bei Cloudflare bestätigt und für diesen Versand registriert werden. Auch nach Beginn der Fassung änderbar.
      */
     recipients?: string | null;
   };
   retentionReminders?: {
     /**
-     * Ein zusammengefasster Hinweis pro Formular und UTC-Woche für gespeicherte Fristen innerhalb von 90 Tagen, innerhalb von 30 Tagen und abgelaufene Fristen. Auch nach Pretest-Beginn abschaltbar. Keine automatische Bereinigung.
+     * Ein zusammengefasster Hinweis pro Formular und UTC-Woche für gespeicherte Fristen innerhalb von 90 Tagen, innerhalb von 30 Tagen und abgelaufene Fristen. Auch nach Beginn der Fassung abschaltbar. Keine automatische Bereinigung.
      */
     enabled?: boolean | null;
   };

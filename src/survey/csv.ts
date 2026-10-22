@@ -5,7 +5,7 @@ export function csvCell(value: unknown) {
   if (typeof value === 'string' && /^[\s]*[=+\-@]/.test(text)) text = "'" + text
   return `"${text.replaceAll('"', '""')}"`
 }
-export function exportCSV(def: Definition, docs: { id: number; version: string; createdAt: string; durationSeconds?: number; answers: Answers }[]) {
+export function exportCSV(def: Definition, docs: { id: number; version: string; createdAt: string; durationSeconds?: number; testOnly?: boolean; answers: Answers }[]) {
   const headers = ['response_id', 'version', 'test_only', 'created_at', 'duration_seconds'], specs: { key: string; get: (a: Answers) => unknown }[] = []
   for (const q of questions(def)) {
     if (q.kind === 'count' || q.kind === 'counts') {
@@ -26,5 +26,5 @@ export function exportCSV(def: Definition, docs: { id: number; version: string; 
     } else specs.push({ key: q.id, get: a => a[q.id] })
   }
   headers.push(...specs.map(s => s.key))
-  return '\uFEFF' + [headers.map(csvCell).join(','), ...docs.map(d => [d.id, d.version, true, d.createdAt, d.durationSeconds, ...specs.map(s => s.get(d.answers))].map(csvCell).join(','))].join('\r\n')
+  return '\uFEFF' + [headers.map(csvCell).join(','), ...docs.map(d => [d.id, d.version, d.testOnly ?? true, d.createdAt, d.durationSeconds, ...specs.map(s => s.get(d.answers))].map(csvCell).join(','))].join('\r\n')
 }

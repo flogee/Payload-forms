@@ -1,6 +1,6 @@
 # Install Payload Forms
 
-Supported: local development on Node.js 26.3.0 with npm, and a deployment in your own Cloudflare account. General Docker/VPS production hosting is not implemented. This release accepts fictional-data pretests only. The participant interface is German.
+Supported: local development on Node.js 26.3.0 with npm, and a deployment in your own Cloudflare account. General Docker/VPS production hosting is not implemented. Fictional-data pretests are the default; real collection requires the explicit operator and per-version privacy gates below. The participant interface is German.
 
 ## Local development
 
@@ -121,7 +121,21 @@ QA inventory must explicitly identify its own participation app when present.
 
 Recheck both public and private boundaries using a client without cookies: saved pretest, required JS/CSS, privacy notices, missing/foreign images, invalid non-writing submission, and protected admin/response/export/analysis/media/MCP routes. A successful provider save is not a successful anonymous test. Do not create fake records in an existing live database for a smoke test.
 
-Future releases validate the exact public application inventory and run those HTTPS checks. Set `RELEASE_PROBE_SLUG` to an existing fictional pretest for that check (default `sample`). Drafts, closed forms and real research collection remain unavailable. Public sharing, research consent and privacy readiness are separate decisions.
+Future releases validate the exact public application inventory and run those HTTPS checks. Set `RELEASE_PROBE_SLUG` to an existing fictional pretest for that check (default `sample`). Drafts and closed forms remain unavailable. Real collection requires the separate activation below. Public sharing, research consent and privacy readiness are separate decisions.
+
+## Real surveys
+
+Real collection is **off by default**. In the selected private `env.internal.vars`, set `FORMS_REAL_SURVEYS_ENABLED` to the string `"1"` only when the operator intends to enable it, then use the normal reviewed build/release process. The string `"0"` or omission disables it; malformed values are rejected by installation validation and never enable runtime collection. Ambient shell settings cannot opt a production installation in. Local development uses the same flag in private `.env.local`, with synthetic inputs only. Setup and bootstrap keep it off and create only the fictional pretest.
+
+Before opening a particular real questionnaire, a human administrator must save a complete privacy profile, mark it as reviewed, and activate status **Echte Erhebung**. This includes controller/contact details, purpose, legal basis and its explanation, data categories, recipients, transfers, retention, rights, complaint authority and the applicable consent/contact wording. The application checks completeness and the review marker; the operator owns substantive review. This is not legal certification or an anonymity guarantee. Keep actual questionnaire text, operator details, responses and contacts in the protected installation workflow.
+
+The live participant page presents the saved notice and a separate participation confirmation. The submission contract requires `confirmParticipation: true`; fictional pretests retain `confirmTest: true`. Missing, mixed or wrong-mode confirmations fail. A live submission requires the current notice hash and any consent required by its legal basis. Optional contact information can always be omitted. An opted-in live contact needs its own consent and a valid email address; a personal name is optional. Pretests continue to require invented contact names and `.invalid` email addresses. Contacts remain separate from answers, but their association remains possible for follow-up; this is not anonymous data storage.
+
+A started instrument, version, slug and privacy notice are frozen. Close that version and duplicate it to a new draft/version for changes; closed versions cannot reopen or switch mode. Operational branding, notifications and retention reminders retain their existing edit rules. Live insertions atomically check the current phase and reviewed privacy profile. New real responses and separate contacts carry `testOnly=false`; old test records stay unchanged. Normal CSV exports exclude contacts and preserve each record's actual test marker. Protected team analysis identifies test, real or mixed datasets, including after closure. Machine identities cannot access real instruments, raw real responses, separate contacts or real analysis; QA/evaluation runs remain fictional pretests even when this flag is enabled.
+
+To stop real collection, set the selected flag to `"0"` and release that configuration. New runtime requests then stop serving real participant forms, notices, scoped images, share links and submissions. Removing the runtime flag also fails closed, even for an enabled build. Saved responses remain real, team-protected and subject to the existing erasure/retention workflow; disabling the flag does not delete, anonymize or relabel them. Fictional pretests continue to work. Closing an individual live version is also available while the operator flag is off.
+
+No migration is required for this feature: existing phase, privacy receipt and test-marker fields are reused. Upgrades preserve accounts, secrets, responses and budget reservations. A rollback to a pretest-only release stops real participation and may show outdated labels or omit real data from analysis; preserve stored data and select a compatible reviewed release before resuming collection. The release probe must remain an existing fictional pretest and performs no real submission.
 
 ## Verification, upgrades and recovery
 

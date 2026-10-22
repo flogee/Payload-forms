@@ -37,7 +37,7 @@ export function AnalysisDashboard({ report, surveys, demo = false }: Props) {
     <main className="analysis-main">
       <div className="analysis-heading">
         <div><p className="analysis-eyebrow">Antworten verstehen</p><h1>Ein Blick auf die Einsendungen.</h1><p className="analysis-lead">Häufigkeiten und Antwortstatus je Frage – mit der passenden Bezugsgröße.</p></div>
-        <span className="analysis-badge">{demo ? 'Demo · erfundene Angaben' : 'Testdaten · keine Erhebung'}</span>
+        <span className="analysis-badge">{demo ? 'Demo · erfundene Angaben' : report.dataset === 'test' ? 'Testdaten · keine Erhebung' : report.dataset === 'real' ? 'Erhebungsdaten · Teamzugang' : 'Test- und Erhebungsdaten · prüfen'}</span>
       </div>
       <div className="analysis-toolbar">
         {!demo && <form action="/auswertung" method="get">
@@ -46,7 +46,7 @@ export function AnalysisDashboard({ report, surveys, demo = false }: Props) {
             {surveys.map(survey => <option key={survey.id} value={survey.id}>{survey.title} · {survey.version} · {phase(survey.phase)}</option>)}
           </select><button type="submit">Anzeigen</button></div>
         </form>}
-        <a className="analysis-text-link" href={demo ? '/auswertung' : '/auswertung/demo'}>{demo ? 'Zu den tatsächlichen Testantworten →' : 'Mit erfundenen Demodaten ansehen →'}</a>
+        <a className="analysis-text-link" href={demo ? '/auswertung' : '/auswertung/demo'}>{demo ? 'Zu den gespeicherten Antworten →' : 'Mit erfundenen Demodaten ansehen →'}</a>
       </div>
       <section className="analysis-overview" aria-label="Datengrundlage">
         <div className="analysis-total"><strong>{number(report.responses)}</strong><span>Einsendungen</span></div>
@@ -57,7 +57,7 @@ export function AnalysisDashboard({ report, surveys, demo = false }: Props) {
       <div className="analysis-body">
         <aside className="analysis-sidebar"><p className="analysis-eyebrow">Abschnitte</p><nav aria-label="Auswertungsabschnitte"><ol>
           {report.sections.map((section, index) => <li key={section.id}><a href={`#${id}-section-${index}`} onClick={() => setOpenSections(previous => new Set([...previous, section.id]))}><span>{String(index + 1).padStart(2, '0')}</span>{section.title}</a></li>)}
-        </ol></nav><div className="analysis-sharing"><h2>Weiterverwenden</h2><a className="analysis-download" href={exportURL('json')} download>JSON / MCP ↓</a><p>JSON und MCP blenden kleine Gruppen aus. Für die Weitergabe diese geschützte Zusammenfassung verwenden.</p><p>Diagramme und SVG zeigen interne Teamzahlen und können kleine Gruppen enthalten.</p></div></aside>
+        </ol></nav><div className="analysis-sharing"><h2>Weiterverwenden</h2><a className="analysis-download" href={exportURL('json')} download>JSON / MCP ↓</a><p>JSON blendet kleine Gruppen aus. MCP ist auf Pretests beschränkt. Für die Weitergabe diese geschützte Zusammenfassung verwenden.</p><p>Diagramme und SVG zeigen interne Teamzahlen und können kleine Gruppen enthalten.</p></div></aside>
         <div className="analysis-sections">
           {!report.responses && <p className="analysis-empty" role="status">Für diese Fassung liegen noch keine Einsendungen vor. Die Bezugsgrößen bleiben sichtbar; Verteilungen erscheinen mit den ersten Antworten.</p>}
           {report.sections.map((section, index) => <details className="analysis-section" key={section.id} id={`${id}-section-${index}`} open={openSections.has(section.id)} onToggle={event => {
@@ -78,7 +78,7 @@ export function AnalysisDashboard({ report, surveys, demo = false }: Props) {
           {report.notes.length > 0 && <section className="analysis-notes" aria-labelledby={`${id}-notes`}><h2 id={`${id}-notes`}>Zur Einordnung</h2><ul>{report.notes.map((note, index) => <li key={index}>{note}</li>)}</ul></section>}
         </div>
       </div>
-      <footer className="analysis-footer"><span>Payload Forms · interne Testauswertung</span><span>Keine Gesamtnote. Jede Frage behält ihre eigene Bezugsgröße.</span></footer>
+      <footer className="analysis-footer"><span>Payload Forms · interne Teamauswertung</span><span>Keine Gesamtnote. Jede Frage behält ihre eigene Bezugsgröße.</span></footer>
     </main>
   </div>
 }

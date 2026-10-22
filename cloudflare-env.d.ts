@@ -18,6 +18,7 @@ interface __BaseEnv_CloudflareEnv {
 	MAIL_MONTHLY_LIMIT?: string;
 	MAIL_LOCAL_TEST?: string;
 	OPS_ALERT_RECIPIENT?: string;
+	FORMS_REAL_SURVEYS_ENABLED?: string;
 	ACCESS_LOGIN_ENABLED?: string;
 	ACCESS_TEAM_DOMAIN?: string;
 	ACCESS_AUD?: string;

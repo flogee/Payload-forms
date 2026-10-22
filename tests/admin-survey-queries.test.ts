@@ -10,6 +10,7 @@ import ts from 'typescript'
 import { participationLinks } from '../src/survey/sharing'
 import { participationQR } from '../src/survey/qr'
 import { mailPolicy, readNotificationSettings } from '../src/survey/notifications'
+import { participationMode } from '../src/survey/participation'
 import { readPrivacySettings } from '../src/survey/privacy'
 
 const require = createRequire(import.meta.url)
@@ -43,7 +44,7 @@ const survey = { id: 42, title: 'Fixture questionnaire', slug: 'fixture', phase:
   })) }], introContent: [{ blockType: 'text', body: 'Fixture introduction' }],
 }
 const selectors = {
-  share: { title: true, slug: true, phase: true },
+  share: { title: true, slug: true, phase: true, privacy: true },
   notifications: { notifications: true },
   retention: { retentionReminders: true, privacy: true },
 }
@@ -69,7 +70,7 @@ function route(kind: keyof typeof selectors, options: { user?: unknown; doc?: un
     '@/auth/team': { isTeamUser }, payload: { getPayload: async () => payload }, '@payload-config': { default: {}, cloudflareEnvironment: {} },
     '@/survey/sharing': { participationLinks: (id: number, slug: string) => participationLinks(id, slug, { SURVEY_ORIGIN: 'http://127.0.0.1:3212' }) },
     '@/survey/qr': { participationQR }, '@/survey/notifications': { mailPolicy, readNotificationSettings },
-    '@/survey/privacy': { readPrivacySettings }, '@/survey/response-store': { responseDatabase: () => 'fixture-db' },
+    '@/survey/participation': { participationMode: (survey: Parameters<typeof participationMode>[0]) => participationMode(survey, {}) }, '@/survey/privacy': { readPrivacySettings }, '@/survey/response-store': { responseDatabase: () => 'fixture-db' },
     '@/survey/notification-store': { notificationSummary: async (...args: unknown[]) => { summaries.push(args); return summary } },
     '@/survey/retention-reminders': { retentionSummary: async (...args: unknown[]) => { summaries.push(args); return summary } },
   }

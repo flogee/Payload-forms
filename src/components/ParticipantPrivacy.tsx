@@ -26,7 +26,7 @@ export function ParticipantPrivacy({ notice, consent, onConsentChange, contactCo
       <span className="participant-privacy__text">{notice.consentText}</span>
     </label>}
     {notice.contactMode !== 'none' && <>
-      <p>{notice.contactMode === 'required' ? 'Für dieses Formular sind eine gesonderte Zustimmung zur Kontaktaufnahme sowie Name und E-Mail-Adresse erforderlich.' : 'Kontaktangaben sind freiwillig. Du kannst deine Antwort auch ohne Kontaktaufnahme abgeben.'}</p>
+      <p>{notice.contactMode === 'required' ? testOnly ? 'Für dieses Formular sind eine gesonderte Zustimmung zur Kontaktaufnahme sowie Name und E-Mail-Adresse erforderlich.' : 'Für dieses Formular sind eine gesonderte Zustimmung zur Kontaktaufnahme und eine E-Mail-Adresse erforderlich. Dein Name ist freiwillig.' : 'Kontaktangaben sind freiwillig. Du kannst deine Antwort auch ohne Kontaktaufnahme abgeben.'}</p>
       <p className="participant-privacy__text">{notice.contactPurpose}</p>
       <label className="test-confirm" htmlFor={`${id}-contact-consent`}>
         <input id={`${id}-contact-consent`} type="checkbox" checked={contactConsent} onChange={event => {
@@ -37,8 +37,8 @@ export function ParticipantPrivacy({ notice, consent, onConsentChange, contactCo
         <span className="participant-privacy__text">{notice.contactConsentText}</span>
       </label>
       {contactConsent && <div className="participant-privacy__contact">
-        <label htmlFor={`${id}-name`}>Name {testOnly && '(erfunden)'}</label>
-        <input id={`${id}-name`} type="text" maxLength={200} required value={contact.name ?? ''} autoComplete={testOnly ? 'off' : 'name'} onChange={event => onContactChange({ ...contact, name: event.target.value })} />
+        <label htmlFor={`${id}-name`}>Name {testOnly ? '(erfunden)' : '(optional)'}</label>
+        <input id={`${id}-name`} type="text" maxLength={200} required={testOnly} value={contact.name ?? ''} autoComplete={testOnly ? 'off' : 'name'} onChange={event => onContactChange({ ...contact, name: event.target.value })} />
         <label htmlFor={`${id}-email`}>E-Mail-Adresse {testOnly && '(erfunden)'}</label>
         <input id={`${id}-email`} type="email" maxLength={254} required value={contact.email ?? ''} autoComplete={testOnly ? 'off' : 'email'} aria-describedby={testOnly ? `${id}-contact-help` : undefined} onChange={event => onContactChange({ ...contact, email: event.target.value })} />
         {testOnly && <p id={`${id}-contact-help`} className="help">Bitte nur erfundene Angaben verwenden, zum Beispiel test@example.invalid. Die E-Mail-Adresse muss auf .invalid enden.</p>}
