@@ -174,10 +174,11 @@ try {
   const dev = launch('Next development server', join(source, 'node_modules/.bin/next'),
     ['dev', '--webpack', '--hostname', '127.0.0.1', '--port', String(devPort)], source, devEnv)
   await ready(dev, devOrigin)
-  // The expanded suite also cold-compiles the download and duplicate routes.
-  // Keep a bounded five-minute HTTP phase on slower hosted runners.
+  // The full suite cold-compiles Payload/MCP, live consent and editor routes.
+  // Five minutes repeatedly expired on slower private hosted runners despite
+  // passing assertions. Keep a bounded ten-minute phase for the same checks.
   await run('development HTTP checks', process.execPath, ['--import', 'tsx', 'tests/http-check.ts'],
-    source, { ...devEnv, TEST_BASE_URL: devOrigin, TEST_SECOND_ORIGIN: devSecondOrigin, TEST_FIRST_USER: '1' }, 300000)
+    source, { ...devEnv, TEST_BASE_URL: devOrigin, TEST_SECOND_ORIGIN: devSecondOrigin, TEST_FIRST_USER: '1' }, 600000)
   await stop(dev)
 
   const buildEnv = { ...env, LOCAL_PROTOTYPE: '0', DISABLE_SCHEMA_PUSH: '1', SURVEY_ORIGIN: devOrigin, SURVEY_ORIGINS: `${devOrigin},${devSecondOrigin}` }
