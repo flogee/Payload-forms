@@ -14,7 +14,8 @@ export function livePrivacyReady(value: unknown): boolean {
   } catch { return false }
 }
 
-export function participationMode(survey: { phase?: unknown; privacy?: unknown }, env: Record<string, unknown> = process.env): SubmissionMode | undefined {
+export function participationMode(survey: { phase?: unknown; privacy?: unknown; instrumentEditToken?: unknown }, env: Record<string, unknown> = process.env): SubmissionMode | undefined {
+  if (survey.instrumentEditToken) return undefined
   if (survey.phase === 'pretest') return 'pretest'
   if (survey.phase === 'live' && realSurveysEnabled(env) && livePrivacyReady(survey.privacy)) return 'live'
   return undefined

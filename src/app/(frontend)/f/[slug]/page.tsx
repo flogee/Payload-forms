@@ -6,7 +6,7 @@ import { fromStored } from '@/survey/storage'
 import { validSurveySlug } from '@/survey/sharing'
 import { Survey } from '../../Survey'
 import { privacyNotice, readPrivacySettings } from '@/survey/privacy'
-import { privacyHash } from '@/survey/privacy-crypto'
+import { digest, privacyHash } from '@/survey/privacy-crypto'
 import { readBranding } from '@/survey/branding'
 import { authorizedEvaluationRun, evaluationRunOpen } from '@/survey/evaluation-runs'
 import { responseDatabase } from '@/survey/response-store'
@@ -40,5 +40,5 @@ export default async function ParticipationPage({ params, searchParams }: {
     definition = JSON.parse(run.instrument) as Definition
   }
   const privacy = privacyNotice(readPrivacySettings(survey.privacy))
-  return <Survey testOnly={mode === 'pretest'} definition={definition} evaluationRun={evaluationRun} branding={readBranding(survey.branding)} surveyID={survey.id} title={survey.title} homeURL={`/f/${survey.slug}`} privacy={privacy} privacyHash={privacy && privacyHash(privacy)} />
+  return <Survey testOnly={mode === 'pretest'} definition={definition} instrumentRevision={digest(definition)} evaluationRun={evaluationRun} branding={readBranding(survey.branding)} surveyID={survey.id} title={survey.title} homeURL={`/f/${survey.slug}`} privacy={privacy} privacyHash={privacy && privacyHash(privacy)} />
 }

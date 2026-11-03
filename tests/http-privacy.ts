@@ -40,8 +40,9 @@ export async function checkPrivacyHTTP(base: string, token: string, apiKey: stri
   assert.ok(participantHTML.includes(settings.consentText), 'participant page contains the stored notice and consent wording')
   assert.match(participantHTML, /<button[^>]*>Hinweise zum Datenschutz<\/button>/, 'forms with a complete profile have a visible privacy button')
   assert.ok(!participantHTML.includes('Pretest mit erfundenen Angaben'), 'complete form information replaces the legacy fallback')
-  await status(json(`/api/surveys/${survey.id}`, { privacy: { ...settings, retention: 'changed' } }, 'PATCH', auth), 400, 'started notice text stays frozen')
+  await status(json(`/api/surveys/${survey.id}`, { privacy: { ...settings, retention: 'changed' } }, 'PATCH', auth), 200, 'pretest notice remains editable')
 
+  await status(json(`/api/surveys/${survey.id}`, { privacy: settings }, 'PATCH', auth), 200, 'restore the fictional notice')
   const notice = privacyNotice(settings)!, noticeHash = privacyHash(notice)
   const body = { surveyID: survey.id, version: slug, submissionID: randomUUID(), confirmTest: true,
     durationSeconds: 2, answers: { F01_name: 'PRIVACY HTTP DUMMY' },

@@ -10,7 +10,7 @@ const {buildConfig,getPayload}=await load('payload');
 const {sqliteD1Adapter}=await load('@payloadcms/db-d1-sqlite');
 const {Surveys}=await import(pathToFileURL(`${root}/src/collections/Surveys.ts`).href);
 const {configureUsers}=await import(pathToFileURL(`${root}/src/collections/Users.ts`).href);
-const {preserveUnchangedSurveyArrays}=await import(pathToFileURL(`${root}/src/survey/persist-update.ts`).href);
+const {guardSurveyEdits,preserveUnchangedSurveyArrays}=await import(pathToFileURL(`${root}/src/survey/persist-update.ts`).href);
 const {toStored,fromStored}=await import(pathToFileURL(`${root}/src/survey/storage.ts`).href);
 const {sample: fixture}=await import(pathToFileURL(`${root}/src/survey/sample.ts`).href);
 const latestSnapshot=readdirSync(`${root}/src/migrations`).filter(name=>/^\d{8}_\d{6}_.*\.json$/.test(name)).sort().at(-1);
@@ -25,6 +25,8 @@ for(const t of Object.values(snapshot.tables)) {
  native.exec(`CREATE TABLE ${quote(t.name)} (${[...cols,...fks].join(',')})`);
  for(const ix of Object.values(t.indexes)) native.exec(`CREATE ${ix.isUnique?'UNIQUE ':''}INDEX ${quote(ix.name)} ON ${quote(t.name)} (${ix.columns.map(quote)})`);
 }
+const {freezeTriggers}=await import(pathToFileURL(`${root}/src/migrations/20261103_180000_first_real_response_freeze.ts`).href);
+for(const statement of freezeTriggers)native.exec(statement);
 let events=[],batches=0;
 const binding={prepare(sql) {
  const stmt=native.prepare(sql);
@@ -37,7 +39,7 @@ const binding={prepare(sql) {
 },async batch(statements){batches++;return Promise.all(statements.map(s=>s.all()))}};
 const database=sqliteD1Adapter({binding,push:false});
 const originalInit=database.init;
-database.init=args=>{const adapter=originalInit(args);adapter.updateOne=preserveUnchangedSurveyArrays(adapter.updateOne);return adapter;};
+database.init=args=>{const adapter=originalInit(args);adapter.client=binding;adapter.updateOne=guardSurveyEdits(preserveUnchangedSurveyArrays(adapter.updateOne));return adapter;};
 const config=await buildConfig({secret:randomBytes(32).toString('hex'),db:database,admin:{user:'users',disable:true},collections:[configureUsers(options.usersEnvironment || {}),options.surveyTransform ? options.surveyTransform(Surveys) : Surveys,{slug:'media',upload:{staticDir:'/private/tmp/payload-forms-test-unused-media'},fields:[{name:'title',type:'text'}]}],graphQL:{disable:true},typescript:{outputFile:'/private/tmp/payload-forms-test-unused-types.ts'}});
 const payload=await getPayload({config,key:randomBytes(8).toString('hex')});
 return {payload,native,fixture,toStored,fromStored,user:{id:777,collection:'users',role:'admin',enabled:true}, reset(){events=[];batches=0}, get events(){return events}, get batches(){return batches}, async close(){await payload.destroy();native.close()}};

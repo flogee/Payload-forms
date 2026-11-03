@@ -196,3 +196,20 @@ test('branding migration preserves started instruments and snapshots and keeps o
     await assert.rejects(migrations[index].down(args), /Rückbau.*gesperrt/)
   } finally { sqlite.close() }
 })
+
+
+test('first-real-response upgrade preserves data, backfills real surveys and never freezes test-only surveys', async () => {
+  const sqlite = new DatabaseSync(':memory:'), dialect = new SQLiteSyncDialect()
+  const args = { db: { run: async (statement: any) => sqlite.exec(dialect.sqlToQuery(statement).sql) } } as any
+  try {
+    for (const migration of migrations.slice(0,-1)) await migration.up(args)
+    sqlite.exec("INSERT INTO surveys(id,title,slug,version,phase) VALUES(1,'Test only','test-only','test-v1','pretest'),(2,'Real fixture','real-fixture','real-v1','live'); INSERT INTO responses(submission_key,survey_id,version,test_only,answers,instrument,created_at) VALUES('test',1,'test-v1',1,'{}','{}','2026-10-01T00:00:00.000Z'),('real',2,'real-v1',0,'{}','{}','2026-10-02T00:00:00.000Z')")
+    await migrations.at(-1)!.up(args)
+    assert.equal(sqlite.prepare('SELECT first_real_response_at FROM surveys WHERE id=1').get()?.first_real_response_at, null)
+    assert.equal(sqlite.prepare('SELECT first_real_response_at FROM surveys WHERE id=2').get()?.first_real_response_at, '2026-10-02T00:00:00.000Z')
+    assert.equal(sqlite.prepare('SELECT count(*) AS n FROM responses').get()?.n, 2)
+    sqlite.exec('DELETE FROM responses WHERE survey_id=2')
+    assert.equal(sqlite.prepare('SELECT first_real_response_at FROM surveys WHERE id=2').get()?.first_real_response_at, '2026-10-02T00:00:00.000Z')
+    await assert.rejects(migrations.at(-1)!.down(args), /gesperrt/)
+  } finally { sqlite.close() }
+})

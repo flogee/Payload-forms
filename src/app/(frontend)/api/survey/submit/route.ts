@@ -2,6 +2,7 @@ import { participationMode } from '@/survey/participation'
 import { getPayload } from 'payload'
 import config, { cloudflareEnvironment } from '@payload-config'
 import { z } from 'zod'
+import type { Definition } from '@/survey/types'
 import { fromStored } from '@/survey/storage'
 import { validateAnswers } from '@/survey/validation'
 import { surveyOriginStatus } from '@/survey/origins'
@@ -13,6 +14,7 @@ import { boundedBody, BodyTooLarge } from '@/survey/bounded-body'
 import { authorizedEvaluationRun, EvaluationRunError, runCredentialSchema } from '@/survey/evaluation-runs'
 const requestSchema = z.object({
   surveyID: z.number().int().positive(), version: z.string().max(100), submissionID: z.string().uuid(),
+  instrumentRevision: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   confirmTest: z.literal(true).optional(), confirmParticipation: z.literal(true).optional(), durationSeconds: z.number().int().min(0).max(86400), answers: z.record(z.unknown()), website: z.literal('').optional(),
   privacy: z.object({ noticeHash: z.string().regex(/^[a-f0-9]{64}$/), consent: z.boolean(), contactConsent: z.boolean() }).strict().optional(),
   contact: liveParticipantContactSchema.optional(),
@@ -44,7 +46,9 @@ export async function POST(req: Request) {
       if (run.survey_id !== survey.id || run.version !== survey.version) throw new EvaluationRunError(404, 'Durchlauf nicht verfügbar.')
     } catch (error) { return json({ error: error instanceof EvaluationRunError ? error.message : 'Durchlauf derzeit nicht verfügbar.' }, error instanceof EvaluationRunError ? error.status : 503) }
   }
-  const definition = fromStored(survey), validated = validateAnswers(definition, input.answers)
+  const definition = run ? JSON.parse(run.instrument) as Definition : fromStored(survey)
+  if (input.instrumentRevision && input.instrumentRevision !== digest(definition)) return json({ error: 'Die Fragebogeninhalte wurden geändert. Bitte lade die Seite neu.' }, 409)
+  const validated = validateAnswers(definition, input.answers)
   if (Object.keys(validated.errors).length) return json({ error: 'Bitte die markierten Angaben prüfen.', fields: validated.errors }, 400)
   const settings = readPrivacySettings(survey.privacy), notice = privacyNotice(settings)
   if (settings.enabled && !notice) return json({ error: 'Die Datenschutzinformation ist noch nicht vollständig vorbereitet.' }, 503)
@@ -68,13 +72,13 @@ export async function POST(req: Request) {
       digest: digest({ ...(mode === 'live' ? { mode } : {}), version: survey.version, evaluationRun: run?.key, answers: validated.answers,
         noticeHash: receipt?.noticeHash, consent: receipt?.consent, contactConsent: receipt?.contactConsent, contact }),
       durationSeconds: input.durationSeconds, answers: validated.answers, instrument: definition, receipt, contact,
-      now: new Date().toISOString(),
+      expectedSurveyUpdatedAt: survey.updatedAt, now: new Date().toISOString(),
       retentionYears: settings.enabled ? settings.retentionYears : 0,
       ...(run ? { evaluationRun: { id: run.id, key: run.key } } : {}),
       notificationRecipients: notifications.enabled && mail.configured ? notifications.recipients : [],
     })
     if (saved.state === 'erased') return json({ error: 'Diese Antwort wurde gelöscht. Ein erneuter Netzwerkversuch kann sie nicht wiederherstellen.' }, 410)
-    if (saved.state === 'closed') return json({ error: 'Diese Befragung ist geschlossen.' }, 403)
+    if (saved.state === 'closed') return json({ error: 'Diese Befragung wurde geschlossen oder geändert. Bitte lade die Seite neu.' }, 403)
     if (saved.state === 'conflict') return json({ error: 'Diese Einsendekennung wurde bereits für andere Angaben verwendet.' }, 409)
     return json({ saved: true, id: saved.id, ...(saved.duplicate ? { duplicate: true } : {}) }, saved.duplicate ? 200 : 201)
   } catch {

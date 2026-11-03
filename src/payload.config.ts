@@ -31,7 +31,7 @@ import { loadAnalysis } from './survey/analysis-load'
 import { demoReport } from './survey/analysis-demo'
 import { isTeamUser } from './auth/team'
 import { safeBatches } from './survey/d1-batches'
-import { preserveUnchangedSurveyArrays } from './survey/persist-update'
+import { guardSurveyEdits, preserveUnchangedSurveyArrays } from './survey/persist-update'
 import { draftTools } from './survey/mcp'
 import { platformOptions, schemaPushAllowed } from './survey/runtime'
 const dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -59,7 +59,7 @@ export const cloudflareEnvironment = { ...cloudflare.env, MEDIA: mediaBucket }
 const initDatabase = database.init
 database.init = args => {
   const adapter = initDatabase(args)
-  adapter.updateOne = preserveUnchangedSurveyArrays(adapter.updateOne)
+  adapter.updateOne = guardSurveyEdits(preserveUnchangedSurveyArrays(adapter.updateOne))
   const originalInsert = adapter.insert
   adapter.insert = async function (args) {
     if (!Array.isArray(args.values)) return originalInsert.call(this, args)

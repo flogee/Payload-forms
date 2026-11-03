@@ -41,7 +41,9 @@ export async function checkVotingHTTP(base: string, token: string) {
   const protectedAnswer = await fetch(`${base}/antwort/${response.notificationReference}`, { headers: auth })
   assert.equal(protectedAnswer.status, 200); assert.match(await protectedAnswer.text(), /5 \/ 5/)
   const frozen = await json(`/api/surveys/${survey.id}`, { sections: toStored({ ...definition, sections: [{ ...definition.sections[0], questions: definition.sections[0].questions.map(q => q.id === 'Slider' ? { ...q, max: 100 } : q) }] }).sections }, true, 'PATCH')
-  assert.equal(frozen.status, 400); await frozen.body?.cancel()
+  assert.equal(frozen.status, 200); await frozen.body?.cancel()
+  const restored=await json(`/api/surveys/${survey.id}`,{sections:toStored(definition).sections},true,'PATCH')
+  assert.equal(restored.status,200);await restored.body?.cancel()
   const copy = await json(`/api/survey/duplicate/${survey.id}`, { requestID: randomUUID() })
   assert.equal(copy.status, 201)
   const copyID = (await copy.json() as any).id

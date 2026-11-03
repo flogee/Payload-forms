@@ -38,7 +38,7 @@ test('only a human administrator may activate live with reviewed privacy; frozen
     assert.equal((await change({ phase: 'live' }) as any).phase, 'live')
     const normalized = await change({ phase: 'live', privacy: { ...draft.privacy, purpose: '  Synthetic purpose  ' } }) as any
     assert.equal(normalized.privacy.purpose, 'Synthetic purpose')
-    const live = { ...draft, phase: 'live' }
+    const live = { ...draft, phase: 'live', firstRealResponseAt: '2026-11-03T00:00:00.000Z' }
     for (const data of [{ phase: 'pretest' }, { version: 'changed' }, { title: 'changed' }, { privacy: testPrivacy() }, { sections: [] as unknown[] }]) await assert.rejects(change(data, live), /eingefroren|geschlossen/)
     delete process.env.FORMS_REAL_SURVEYS_ENABLED
     assert.equal((await change({ phase: 'closed' }, live) as any).phase, 'closed', 'operator shutdown never prevents closure')

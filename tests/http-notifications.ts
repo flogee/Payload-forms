@@ -31,8 +31,9 @@ export async function checkNotificationHTTP(base: string, token: string, apiKey:
   await status(json(`/api/surveys/${survey.id}`, { ...instrumentFields, notifications: { enabled: true, recipients: 'notify@localhost.invalid' } }, 'PATCH'),
     200, 'admin serialization may reorder object keys while changing operational settings')
   const changedSections = structuredClone(teamSurvey.sections)
-  changedSections[0].questions[0].label = 'Forbidden instrument edit'
-  await status(json(`/api/surveys/${survey.id}`, { sections: changedSections }, 'PATCH'), 400, 'actual frozen instrument changes still fail')
+  changedSections[0].questions[0].label = 'Editable pretest instrument'
+  await status(json(`/api/surveys/${survey.id}`, { sections: changedSections }, 'PATCH'), 200, 'pretest instrument remains editable')
+  await status(json(`/api/surveys/${survey.id}`, { sections: teamSurvey.sections }, 'PATCH'), 200, 'restore the fictional pretest instrument')
   for (const args of [{ id: String(survey.id) }, { where: JSON.stringify({ id: { equals: survey.id } }) },
     { id: String(survey.id), select: JSON.stringify({ notifications: true, title: true }) }]) {
     const found = await request('/api/mcp', { method: 'POST', headers: { ...mcp, 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },

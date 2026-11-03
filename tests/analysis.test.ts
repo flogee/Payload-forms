@@ -84,8 +84,8 @@ test('loader preserves access, selects minimal replies, preserves response mode/
   const result = await loadAnalysis(payload, 7, { user })
   assert.equal(result.responses, 60)
   for (const call of calls) { assert.equal(call.user, user); assert.equal(call.overrideAccess, false); assert.equal(call.depth, 0) }
-  assert.deepEqual(calls[1].select, { answers: true, createdAt: true, testOnly: true })
-  assert.deepEqual(calls[1].where.and, [{ survey: { equals: 7 } }, { version: { equals: 'demo-1' } }])
+  assert.deepEqual(calls[1].select, { answers: true, createdAt: true, testOnly: true, instrument: true })
+  assert.deepEqual(calls[1].where, { survey: { equals: 7 } })
   const tooMany = { find: async (args: any) => args.collection === 'surveys' ? { docs: [{ ...meta, ...toStored(demoDefinition) }] } : { totalDocs: 1001, docs: [] as unknown[] } } as unknown as Payload
   await assert.rejects(loadAnalysis(tooMany, 7, { user }), /keine Teilergebnisse/)
   for (const input of ['0', '1 OR 1', '1e3', '-1', '2147483648', ['1']]) assert.equal(parseSurveyID(input), null)
