@@ -25,13 +25,13 @@ export const draftTools = [
   },
   {
     name: 'updateSurveyDraft',
-    description: 'Ersetzt einen bestehenden Entwurf mit der vollständig angegebenen Fassung. Begonnene Pretests und geschlossene Fassungen sind gesperrt.',
+    description: 'Ersetzt einen Entwurf oder Pretest mit der vollständig angegebenen Fassung. Echte Antworten frieren die Fassung ein; Testantworten nicht.',
     parameters: updatedSchema.shape,
     handler: async (args: Record<string, unknown>, req: PayloadRequest) => {
       if (!req.user) throw new Error('Anmeldung erforderlich')
       const data = updatedSchema.parse(args)
       const previous = await req.payload.findByID({ collection: 'surveys', id: data.surveyID, req, overrideAccess: false })
-      if (previous.phase !== 'draft') throw new Error('Diese Erhebungsfassung ist eingefroren. Bitte einen neuen Entwurf anlegen.')
+      if (!['draft', 'pretest'].includes(previous.phase) || previous.firstRealResponseAt) throw new Error('Diese Erhebungsfassung ist eingefroren. Bitte einen neuen Entwurf anlegen.')
       const survey = await req.payload.update({ collection: 'surveys', id: previous.id, data: { title: data.title, slug: data.slug, ...toStored(data.definition as Definition) }, req, overrideAccess: false })
       return result({ id: survey.id, version: survey.version, phase: survey.phase })
     }

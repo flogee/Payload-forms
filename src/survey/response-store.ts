@@ -60,6 +60,7 @@ export type Submission = {
   mode?: SubmissionMode // Omitted only for legacy fictional pretest callers.
   livePrivacy?: PrivacySettings // Current validated profile, compared atomically for live inserts.
   key: string; erasureKey: string; surveyID: number; version: string; digest: string
+  expectedSurveyUpdatedAt?: string
   durationSeconds: number; answers: Answers; instrument: Definition
   receipt?: PrivacyReceipt; contact?: ParticipantContact; now: string
   notificationReference?: string; notificationRecipients?: string[]
@@ -77,6 +78,7 @@ export function submissionStatements(input: Submission): Statement[] {
        privacy_receipt, submission_digest, notification_reference, retention_review_due_at, created_at, updated_at${input.evaluationRun ? ', evaluation_run_id' : ''})
       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?${input.evaluationRun ? ', ?' : ''}
       WHERE EXISTS (SELECT 1 FROM surveys WHERE id = ? AND version = ? AND phase = ?
+        AND instrument_edit_token IS NULL AND (? IS NULL OR updated_at = ?)
         ${live ? `AND privacy_enabled = 1 AND privacy_reviewed = 1 ${privacy.map(([key]) => `AND coalesce(privacy_${key.replace(/[A-Z]/g, letter => '_' + letter.toLowerCase())}, ?) = ?`).join(' ')}` : ''})
       AND NOT EXISTS (SELECT 1 FROM response_erasure_logs WHERE response_key = ?)
       ${input.evaluationRun ? `AND EXISTS (SELECT 1 FROM evaluation_runs WHERE id = ? AND key = ? AND survey_id = ?
@@ -86,7 +88,7 @@ export function submissionStatements(input: Submission): Statement[] {
       JSON.stringify(input.answers), JSON.stringify(input.instrument),
       input.receipt ? JSON.stringify(input.receipt) : null, input.digest, input.notificationReference ?? null,
       retentionReviewDueAt(input.now, input.retentionYears ?? 0), input.now, input.now,
-      ...(input.evaluationRun ? [input.evaluationRun.id] : []), input.surveyID, input.version, live ? 'live' : 'pretest', ...privacy.flatMap(([key, value]) => {
+      ...(input.evaluationRun ? [input.evaluationRun.id] : []), input.surveyID, input.version, live ? 'live' : 'pretest', input.expectedSurveyUpdatedAt ?? null, input.expectedSurveyUpdatedAt ?? null, ...privacy.flatMap(([key, value]) => {
         const fallback = privacyDefaults[key as keyof PrivacySettings]
         return [typeof fallback === 'boolean' ? Number(fallback) : fallback, typeof value === 'boolean' ? Number(value) : value]
       }), input.erasureKey,

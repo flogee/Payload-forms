@@ -1,3 +1,4 @@
+import * as migration_20261103_180000_first_real_response_freeze from './20261103_180000_first_real_response_freeze';
 import * as migration_20261005_100813_initial_schema from './20261005_100813_initial_schema';
 import * as migration_20261005_101926_mcp_drafts from './20261005_101926_mcp_drafts';
 import * as migration_20261007_052947_privacy_controls from './20261007_052947_privacy_controls';
@@ -90,4 +91,5 @@ export const migrations = [
     down: migration_20261019_100000_qa_machine_budgets.down,
     name: '20261019_100000_qa_machine_budgets',
   },
+  { up: migration_20261103_180000_first_real_response_freeze.up, down: migration_20261103_180000_first_real_response_freeze.down, name: '20261103_180000_first_real_response_freeze' },
 ];

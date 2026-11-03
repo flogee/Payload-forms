@@ -42,9 +42,8 @@ export async function checkRealSurveysHTTP(base: string, token: string, apiKey: 
   await status(request(`/f/${realFixtureSlug}/images/${imageID}`), 200, 'live serves only its referenced images')
   await status(request(`/f/${realFixtureSlug}/images/2147483647`), 404, 'foreign live image is unavailable')
   await status(request(`/api/survey/share/${survey.id}`, { headers: auth }), 200, 'team may share an enabled live version')
-  for (const data of [{ phase: 'pretest' }, { title: 'changed' }, { version: 'changed' }, { privacy: { ...settings, purpose: 'changed' } }]) {
-    await status(json(path, data, 'PATCH'), 400, 'started live version and privacy remain frozen')
-  }
+  await status(json(path, { title: 'Editable before the first real answer' }, 'PATCH'), 200, 'live without real answers remains editable')
+  await status(json(path, { title: survey.title }, 'PATCH'), 200, 'restore the synthetic title')
   const privacy = { noticeHash: privacyHash(privacyNotice(settings)!), consent: true, contactConsent: false }
   const input = { surveyID: survey.id, version: definition.version, submissionID: randomUUID(), confirmParticipation: true,
     durationSeconds: 2, answers: {}, privacy }
@@ -57,9 +56,14 @@ export async function checkRealSurveysHTTP(base: string, token: string, apiKey: 
   await status(json('/api/survey/submit', { ...input, privacy: { ...privacy, consent: false } }, 'POST', {}), 400, 'consent basis requires affirmative live consent')
   await status(json('/api/survey/submit', { ...input, contact: { email: 'synthetic@example.org' } }, 'POST', {}), 400, 'live contacts require their own opt-in')
   await status(json('/api/survey/submit', { ...input, evaluationRun: { key: randomUUID(), token: randomUUID() } }, 'POST', {}), 400, 'live cannot join fictional evaluation runs')
+  await status(json('/api/survey/submit', { ...input, instrumentRevision: '0'.repeat(64) }, 'POST', {}), 409, 'stale questionnaire content requires a reload')
   const saved = await json('/api/survey/submit', input, 'POST', {})
   assert.equal(saved.status, 201, 'all content questions and optional contacts may be skipped')
   const savedID = (await saved.json() as any).id
+  for (const data of [{ phase: 'pretest' }, { title: 'changed' }, { version: 'changed' }, { privacy: { ...settings, purpose: 'changed' } }]) {
+    await status(json(path, data, 'PATCH'), 400, 'started live version and privacy remain frozen')
+  }
+
   await status(json('/api/survey/submit', { ...input, durationSeconds: 8 }, 'POST', {}), 200, 'live exact retries are idempotent')
   await status(json('/api/survey/submit', { ...input, answers: { Q1: 'changed' } }, 'POST', {}), 409, 'live retries cannot replace answers')
   const response = await (await request(`/api/responses/${savedID}?depth=0`, { headers: auth })).json() as any

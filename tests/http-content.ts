@@ -111,8 +111,7 @@ export async function checkContentHTTP(base: string, token: string, apiKey: stri
   assert.deepEqual(Buffer.from(await served.arrayBuffer()), bytes)
   await status(request(`/f/sample/images/${image.id}`), 404, 'an image is not served under an unrelated survey')
   await status(request(`/f/${slug}/images/2147483647`), 404, 'unreferenced image is not served')
-  await status(json(`/api/surveys/${survey.id}`, { introContent: [] }, 'PATCH'), 400, 'started intro blocks are frozen')
-  await status(json(`/api/surveys/${survey.id}`, { sections: toStored(sample).sections }, 'PATCH'), 400, 'started section blocks are frozen')
+  await status(json(`/api/surveys/${survey.id}`, { title: 'Editable content pretest' }, 'PATCH'), 200, 'pretest content remains editable')
   const saved = await json('/api/survey/submit', { surveyID: survey.id, version: slug, submissionID: randomUUID(), confirmTest: true, answers: { F01_name: 'CONTENT HTTP DUMMY' }, durationSeconds: 2 })
   assert.equal(saved.status, 201)
   const response = await (await request(`/api/responses/${(await saved.json() as any).id}?depth=0`, { headers: auth })).json() as any

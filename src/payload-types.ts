@@ -210,6 +210,8 @@ export interface User {
  */
 export interface Survey {
   id: number;
+  firstRealResponseAt?: string | null;
+  instrumentEditToken?: string | null;
   title: string;
   version: string;
   phase: 'draft' | 'pretest' | 'live' | 'closed';
@@ -400,7 +402,7 @@ export interface Survey {
     reviewed?: boolean | null;
   };
   /**
-   * Ersetzt die Marke oben links im Teilnahmeformular. Auch nach Beginn der Fassung änderbar; Fragen und Datenschutz bleiben eingefroren.
+   * Ersetzt die Marke oben links im Teilnahmeformular. Auch nach der ersten echten Antwort änderbar; Fragen und Datenschutz sind dann eingefroren.
    */
   branding?: {
     mode?: ('default' | 'text' | 'logo') | null;
@@ -414,7 +416,7 @@ export interface Survey {
     logo?: (number | null) | Media;
   };
   /**
-   * Bestimmt die Teilnahmelink-Adresse, z. B. seminarfeedback-2026. Nach Freigabe bleibt sie unveränderlich.
+   * Bestimmt die Teilnahmelink-Adresse, z. B. seminarfeedback-2026. Ab der ersten echten Antwort bleibt sie unveränderlich.
    */
   slug: string;
   notifications?: {
@@ -789,7 +791,7 @@ export interface PayloadMcpApiKey {
      */
     createSurveyDraft?: boolean | null;
     /**
-     * Ersetzt einen bestehenden Entwurf mit der vollständig angegebenen Fassung. Begonnene Pretests und geschlossene Fassungen sind gesperrt.
+     * Ersetzt einen Entwurf oder Pretest mit der vollständig angegebenen Fassung. Echte Antworten frieren die Fassung ein; Testantworten nicht.
      */
     updateSurveyDraft?: boolean | null;
     /**
@@ -988,6 +990,8 @@ export interface UsersSelect<T extends boolean = true> {
  * via the `definition` "surveys_select".
  */
 export interface SurveysSelect<T extends boolean = true> {
+  firstRealResponseAt?: T;
+  instrumentEditToken?: T;
   title?: T;
   version?: T;
   phase?: T;

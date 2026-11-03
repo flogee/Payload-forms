@@ -11,7 +11,7 @@ import { readBranding, surveyImageIDs } from '../survey/branding'
 import { answerFormats } from '../components/SurveyEditor.helpers'
 import { livePrivacyReady, realSurveysEnabled } from '../survey/participation'
 import { managesTeam } from '../auth/team'
-import { rememberSurveyArrays } from '../survey/persist-update'
+import { instrumentFields, rememberSurveyArrays } from '../survey/persist-update'
 // MCP impersonates its owning team account; operational addresses stay private.
 const notificationAccess = ({ req }: { req: PayloadRequest }) => staff({ req }) &&
   !(req.user && '_strategy' in req.user && req.user._strategy === 'mcp-api-key')
@@ -37,9 +37,8 @@ export const Surveys: CollectionConfig = {
   }, disableDuplicate: true,
   access: { read: ({ req }) => staff({ req }) ? req.user && '_strategy' in req.user && req.user._strategy === 'mcp-api-key' ? { phase: { in: ['draft', 'pretest'] } } : true : false, create: staff, update: staff, delete: () => false },
   hooks: { beforeChange: [async ({ data, originalDoc, operation, req }) => {
-    if (operation === 'update' && originalDoc?.phase !== 'draft') {
-      const instrument = ['title', 'slug', 'version', 'introduction', 'introContent', 'sections', 'privacy']
-      if (instrument.some(k => data[k] !== undefined && canonicalJSON(data[k]) !== canonicalJSON(originalDoc[k]))) throw new APIError('Diese Erhebungsfassung ist eingefroren. Für Änderungen bitte einen neuen Entwurf mit neuer Versionskennung anlegen.', 400)
+    if (operation === 'update' && originalDoc?.firstRealResponseAt) {
+      if (instrumentFields.some(k => data[k] !== undefined && canonicalJSON(data[k]) !== canonicalJSON(originalDoc[k]))) throw new APIError('Diese Erhebungsfassung ist seit der ersten echten Antwort eingefroren. Für Änderungen bitte einen neuen Entwurf mit neuer Versionskennung anlegen.', 400)
       if (data.phase && ![originalDoc.phase, 'closed'].includes(data.phase)) throw new APIError('Eine gestartete Fassung kann nur geschlossen werden.', 400)
     }
     const merged = { ...originalDoc, ...data }
@@ -77,11 +76,13 @@ export const Surveys: CollectionConfig = {
     }
     // Freeze the same normalized profile used by the participant receipt and
     // atomic SQL guard; textarea whitespace must not make a reviewed form unusable.
-    if ((operation === 'create' || originalDoc?.phase === 'draft') && (data.privacy !== undefined || merged.phase === 'live')) data.privacy = privacy
+    if ((operation === 'create' || !originalDoc?.firstRealResponseAt) && (data.privacy !== undefined || merged.phase === 'live')) data.privacy = privacy
     if (operation === 'update' && originalDoc?.id != null) rememberSurveyArrays(req, originalDoc.id, originalDoc)
     return data
   }] },
   fields: [
+    { name: 'firstRealResponseAt', type: 'date', access: { create: () => false, update: () => false }, admin: { hidden: true } },
+    { name: 'instrumentEditToken', type: 'text', access: { read: () => false, create: () => false, update: () => false }, admin: { hidden: true } },
     { name: 'title', label: 'Titel', type: 'text', required: true },
     { type: 'row', fields: [
         { name: 'version', label: 'Erhebungsfassung', type: 'text', required: true, unique: true },
@@ -100,14 +101,14 @@ export const Surveys: CollectionConfig = {
         { name: 'privacy', label: 'Datenschutz und Teilnahme', type: 'group', fields: privacyFields },
       ] },
       { label: 'Veröffentlichen', description: 'Teilnahmelink, Vorschau und Downloads verwenden den gespeicherten Stand. Den Status oberhalb der Reiter ändern.', fields: [
-        { name: 'branding', label: 'Kopfzeile', type: 'group', admin: { description: 'Ersetzt die Marke oben links im Teilnahmeformular. Auch nach Beginn der Fassung änderbar; Fragen und Datenschutz bleiben eingefroren.' }, fields: [
+        { name: 'branding', label: 'Kopfzeile', type: 'group', admin: { description: 'Ersetzt die Marke oben links im Teilnahmeformular. Auch nach der ersten echten Antwort änderbar; Fragen und Datenschutz sind dann eingefroren.' }, fields: [
           { name: 'mode', label: 'Anzeige oben links', type: 'select', defaultValue: 'default', options: [
             { value: 'default', label: 'Standard (Payload Forms / Sample)' }, { value: 'text', label: 'Eigener Text' }, { value: 'logo', label: 'Logo' },
           ] },
           { name: 'text', label: 'Name in der Kopfzeile', type: 'text', maxLength: 100, admin: { condition: (_, group) => ['text', 'logo'].includes(group.mode), description: 'Bei einem Logo dient dieser Name als Alternativtext und Ersatz, falls das Bild nicht geladen werden kann.' } },
           { name: 'logo', label: 'Logo hochladen oder auswählen', type: 'upload', relationTo: 'media', admin: { condition: (_, group) => group.mode === 'logo', description: 'PNG, JPG oder WebP, höchstens 2 MiB. Transparente PNG- oder WebP-Dateien eignen sich besonders gut.' } },
         ] },
-        { name: 'slug', label: 'Linkkennung', type: 'text', required: true, unique: true, validate: (value: unknown) => validSurveySlug(value) || 'Bitte mit einem Kleinbuchstaben beginnen und nur Kleinbuchstaben, Ziffern und Bindestriche verwenden (höchstens 80 Zeichen).', admin: { description: 'Bestimmt die Teilnahmelink-Adresse, z. B. seminarfeedback-2026. Nach Freigabe bleibt sie unveränderlich.' } },
+        { name: 'slug', label: 'Linkkennung', type: 'text', required: true, unique: true, validate: (value: unknown) => validSurveySlug(value) || 'Bitte mit einem Kleinbuchstaben beginnen und nur Kleinbuchstaben, Ziffern und Bindestriche verwenden (höchstens 80 Zeichen).', admin: { description: 'Bestimmt die Teilnahmelink-Adresse, z. B. seminarfeedback-2026. Ab der ersten echten Antwort bleibt sie unveränderlich.' } },
         { name: 'participationSharing', label: 'Teilnahmelink und QR-Code', type: 'ui', admin: { components: { Field: '/components/SurveySharing#SurveySharing' } } },
         { name: 'surveyTools', label: 'Downloads und neuer Entwurf', type: 'ui', admin: { components: { Field: '/components/SurveyTools#SurveyTools' } } },
       ] },

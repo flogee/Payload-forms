@@ -6,6 +6,7 @@ import { up as initial } from '../src/migrations/20261005_100813_initial_schema'
 import { up as extend } from '../src/migrations/20261005_101926_mcp_drafts'
 import { up as privacyMigration } from '../src/migrations/20261007_052947_privacy_controls'
 import { up as mailMigration } from '../src/migrations/20261007_064226_email_notifications'
+import { up as freezeMigration } from '../src/migrations/20261103_180000_first_real_response_freeze'
 import { up as retentionMigration } from '../src/migrations/20261008_133131_retention_reminders'
 import { saveSubmission, eraseResponse, readResponseExport, type Submission, type ResponseDatabase, type SQLValue } from '../src/survey/response-store'
 import { digest, erasureKey, privacyHash } from '../src/survey/privacy-crypto'
@@ -20,7 +21,7 @@ async function fixture() {
   sqlite.exec('PRAGMA foreign_keys=ON')
   const dialect = new SQLiteSyncDialect()
   const args = { db: { run: async (statement: any) => sqlite.exec(dialect.sqlToQuery(statement).sql) } } as any
-  await initial(args); await extend(args); await privacyMigration(args); await mailMigration(args); await retentionMigration(args)
+  await initial(args); await extend(args); await privacyMigration(args); await mailMigration(args); await retentionMigration(args); await freezeMigration(args)
   sqlite.exec("INSERT INTO users (id,email) VALUES (1,'fixture@example.invalid'); INSERT INTO surveys (id,title,slug,version,phase) VALUES (1,'Fixture','fixture','fixture-v1','pretest')")
   const db: ResponseDatabase = {
     prepare(sql) {
