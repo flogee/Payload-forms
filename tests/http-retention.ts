@@ -40,7 +40,8 @@ export async function checkRetentionHTTP(base: string, token: string, apiKey: st
   oversized.set('_payload', ' '.repeat(1024 * 1024 + 1))
   await status(request(`/api/surveys/${survey.id}`, { method: 'PATCH', headers: { ...auth, Origin: base }, body: oversized }), 413, 'admin form metadata remains bounded')
   await status(json(`/api/surveys/${survey.id}`, { phase: 'pretest' }, 'PATCH'), 200, 'configured dummy pretest opens')
-  await status(json(`/api/surveys/${survey.id}`, { privacy: { ...privacy, retentionYears: 4 } }, 'PATCH'), 400, 'retention policy stays frozen after opening')
+  await status(json(`/api/surveys/${survey.id}`, { privacy: { ...privacy, retentionYears: 4 } }, 'PATCH'), 200, 'pretest retention policy remains editable')
+  await status(json(`/api/surveys/${survey.id}`, { privacy }, 'PATCH'), 200, 'restore the fictional retention policy')
   await status(json(`/api/surveys/${survey.id}`, { retentionReminders: { enabled: false } }, 'PATCH'), 200, 'staff can disable operational reminders after opening')
   await status(json(`/api/surveys/${survey.id}`, { retentionReminders: { enabled: true } }, 'PATCH'), 200, 'staff can enable operational reminders after opening')
   const notice = privacyNotice(privacy)!

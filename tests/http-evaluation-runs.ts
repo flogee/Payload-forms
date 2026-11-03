@@ -95,7 +95,7 @@ export async function checkEvaluationRunsHTTP(base: string, teamToken: string) {
   assert.equal((await json('/api/survey/submit', submission({ ...credentialA, key: b.key }, 5))).status, 404)
   assert.equal((await json('/api/survey/submit', submission(runA.reportCredential, 5))).status, 404)
   assert.equal((await json(`/api/evaluation-runs`, { ...a }, teamToken)).status, 403, 'generic collection writes are denied')
-  assert.equal((await json(`/api/surveys/${survey.id}`, { sections: [] }, teamToken, 'PATCH')).status, 400, 'started version stays frozen')
+  assert.equal((await json(`/api/surveys/${survey.id}`, { sections: [] }, teamToken, 'PATCH')).status, 400, 'empty questionnaire sections remain invalid')
   assert.equal((await json('/api/survey/runs', { key: a.key }, undefined, 'PATCH')).status, 401)
   assert.equal((await json('/api/survey/runs', { key: a.key }, teamToken, 'PATCH')).status, 200)
   assert.equal((await json('/api/survey/runs', { key: a.key }, teamToken, 'PATCH')).status, 200, 'closure is repeatable')
