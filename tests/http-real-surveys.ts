@@ -123,6 +123,6 @@ export async function checkRealSurveysHTTP(base: string, token: string, apiKey: 
   await status(json(`/api/surveys/${closeID}`, { phase: 'closed' }, 'PATCH'), 200, 'live version can close')
   await status(request(`/f/${closeSlug}`), 404, 'closed live form is unavailable')
   await status(json('/api/survey/submit', { ...input, surveyID: closeID, version: closeSlug, submissionID: randomUUID() }, 'POST', {}), 403, 'closed live rejects submissions')
-  await status(json(`/api/surveys/${closeID}`, { phase: 'live' }, 'PATCH'), 400, 'closed live cannot reopen')
+  await status(json(`/api/surveys/${closeID}`, { phase: 'live' }, 'PATCH'), 200, 'a closed survey without real answers can reopen')
   console.log('PASS: synthetic live activation, real consent and contact contracts, protected analysis, immutable versions, closure, mode markers and fictional machine separation.')
 }
