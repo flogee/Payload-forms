@@ -81,3 +81,27 @@ CSV `test_only` values and analysis `dataset` labels now reflect stored response
 The editing boundary is the first saved real response, not publication status. Pretests remain editable; their responses keep their original snapshots. The additive `20261103_180000_first_real_response_freeze` migration backfills existing real-response timestamps and makes future freezes permanent. Questionnaire edits acquire a conditional D1 edit token before Payload writes any child arrays; real inserts check that token atomically. Concurrent first responses prevent the edit before nested writes. Failed database replacements retain their token so a partial instrument cannot accept answers; verified recovery is described in INSTALL.md. Real-collection operator/privacy/human-administrator gates and machine access restrictions are unchanged. Browser requests send an additive instrument revision; evaluation-run requests continue to use their fixed snapshot.
 
 Pretest CSV exports preserve the union of snapshot-defined columns, include an `instrument_revision` digest, and include prior versions of the same survey. Each row is interpreted through its own snapshot. Aggregates use the retained snapshot when all answers share it; mixed question definitions return an explicit error instead of silently combining different instruments.
+
+
+## Combined consent compatibility boundary
+
+The additive `20261105_192309_combined_contact_consent` migration adds only
+`privacy_contact_consent_mode`, defaulting to `separate`. Existing instruments,
+receipt JSON and their notice hashes are unchanged. Only a human-reviewed
+consent profile with optional contacts may explicitly select `combined`.
+The common text must describe optional contact and response linkage. It is not
+an automatic legal review. The new mode is part of the versioned notice and is
+frozen with the first real response.
+
+Combined live forms show one affirmative consent checkbox and optional contact
+fields. Without consent nothing is submitted; blank contacts create no contact
+record. An entered contact is validated and stored separately with its recorded
+choice. The existing request confirmation and receipt booleans remain intact.
+Fictional pretests retain their explicit test confirmation and fictional email
+rules. Separate mode, non-consent legal bases and required-contact forms retain
+their prior behavior. Returning to a new participation clears prior consent.
+
+After enabling combined mode, do not downgrade to an older application without
+operator review: older versions cannot interpret the recorded combined mode.
+The migration deliberately refuses automatic rollback; preserve stored notices
+and receipts during recovery.

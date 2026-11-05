@@ -159,3 +159,21 @@ Apply additive migration `20261103_180000_first_real_response_freeze` before ser
 The edit token coordinates Payload's multi-statement updates with the first real response. Validation failures happen before acquiring it. Failed database replacements, process termination or a failed token release leave the token set and block further edits/submissions for that form. Before clearing `surveys.instrument_edit_token`, verify the writer has stopped and inspect the stored instrument for a partial failed update; never clear `first_real_response_at`. There is deliberately no unsafe automatic expiry. Code rollback and database recovery remain separate operations; the migration has no automatic down path.
 
 Pretest CSV exports preserve the union of snapshot-defined columns, include an `instrument_revision` digest, and include prior versions of the same survey. Each row is interpreted through its own snapshot. Aggregates use the retained snapshot when all answers share it; mixed question definitions return an explicit error instead of silently combining different instruments.
+
+
+## One common consent checkbox
+
+In a reviewed questionnaire privacy profile, choose **Eine gemeinsame Checkbox
+mit freiwilliger Kontaktangabe** under **Darstellung der Einwilligung** to combine
+response consent and a deliberately provided optional contact address. This
+mode requires the consent legal basis and optional contacts. Explain the contact
+purpose and response linkage in the common consent text; check that the privacy
+information still matches the actual study. Existing forms remain in separate
+mode unless explicitly changed. Test-only confirmation remains visible in
+pretests; real collection still requires the operator flag and administrator
+activation. Do not use this setting as a substitute for legal review.
+
+Apply the additive `20261105_192309_combined_contact_consent` migration before
+serving this version. It only adds the legacy-default mode column; existing
+answers, contacts and receipt hashes remain untouched. An upgrade does not
+activate combined mode or real collection for any existing questionnaire.

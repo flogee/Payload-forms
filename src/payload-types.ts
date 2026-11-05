@@ -392,6 +392,10 @@ export interface Survey {
      * Name und E-Mail werden in einem getrennten Bereich gespeichert und bleiben der Antwort zuordenbar. Das ergibt keine anonyme Erhebung.
      */
     contactMode?: ('none' | 'optional' | 'required') | null;
+    /**
+     * Gemeinsam ist nur mit Rechtsgrundlage Einwilligung und freiwilligen Kontaktangaben möglich. Der gemeinsame Einwilligungstext muss die Kontaktaufnahme und Zuordnung ausdrücklich erklären. Bestehende Fassungen bleiben unverändert, bis diese Option bewusst gewählt wird.
+     */
+    contactConsentMode?: ('separate' | 'combined') | null;
     contactPurpose?: string | null;
     contactRetention?: string | null;
     consentText?: string | null;
@@ -1103,6 +1107,7 @@ export interface SurveysSelect<T extends boolean = true> {
         rights?: T;
         complaintAuthority?: T;
         contactMode?: T;
+        contactConsentMode?: T;
         contactPurpose?: T;
         contactRetention?: T;
         consentText?: T;

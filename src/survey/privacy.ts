@@ -18,6 +18,7 @@ export const privacySettingsSchema = z.object({
   rights: text(),
   complaintAuthority: text(1000),
   contactMode: z.enum(['none', 'optional', 'required']).default('none'),
+  contactConsentMode: z.enum(['separate', 'combined']).default('separate'),
   contactPurpose: text(),
   contactRetention: text(),
   consentText: text(2000),
@@ -32,6 +33,7 @@ export type PrivacyNotice = {
   sections: PrivacySection[]
   consentText: string
   contactMode: PrivacySettings['contactMode']
+  contactConsentMode?: 'combined'
   contactPurpose: string
   contactConsentText: string
 }
@@ -75,7 +77,10 @@ export function privacyMissing(settings: PrivacySettings): string[] {
   if (settings.contactMode !== 'none') {
     if (!settings.contactPurpose) missing.push('Zweck der Kontaktaufnahme')
     if (!settings.contactRetention) missing.push('Aufbewahrung der Kontaktangaben')
-    if (!settings.contactConsentText) missing.push('Einwilligung zur Kontaktaufnahme')
+    if (settings.contactConsentMode === 'separate' && !settings.contactConsentText) missing.push('Einwilligung zur Kontaktaufnahme')
+  }
+  if (settings.contactConsentMode === 'combined' && (settings.legalBasis !== 'consent' || settings.contactMode !== 'optional')) {
+    missing.push('Gemeinsame Einwilligung benötigt die Rechtsgrundlage Einwilligung und freiwillige Kontaktangaben')
   }
   return missing
 }
@@ -104,9 +109,24 @@ export function privacyNotice(settings: PrivacySettings): PrivacyNotice | undefi
     sections,
     consentText: settings.legalBasis === 'consent' ? settings.consentText : '',
     contactMode: settings.contactMode,
+    // Omit the additive field for legacy notices so their hashes remain identical.
+    ...(settings.contactConsentMode === 'combined' ? { contactConsentMode: 'combined' as const } : {}),
     contactPurpose: settings.contactPurpose,
-    contactConsentText: settings.contactMode === 'none' ? '' : settings.contactConsentText,
+    contactConsentText: settings.contactMode === 'none' || settings.contactConsentMode === 'combined' ? '' : settings.contactConsentText,
   }
+}
+
+export function usesCombinedConsent(notice?: Pick<PrivacyNotice, 'legalBasis' | 'contactMode' | 'contactConsentMode'>): boolean {
+  return notice?.contactConsentMode === 'combined' && notice.legalBasis === 'consent' && notice.contactMode === 'optional'
+}
+
+// The optional field is a contact choice only alongside the affirmative common
+// consent and an explicit submission. Presence of an email alone grants nothing.
+export function contactRequested(notice: PrivacyNotice | undefined, consent: boolean, separateConsent: boolean, contact: Partial<ParticipantContact>): boolean {
+  if (!notice || notice.contactMode === 'none') return false
+  return usesCombinedConsent(notice)
+    ? consent && Boolean(contact.email?.trim() || contact.name?.trim())
+    : separateConsent
 }
 
 export const participantContactSchema = z.object({
