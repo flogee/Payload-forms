@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { participantContact, privacyMissing, privacyNotice, readPrivacySettings } from '../src/survey/privacy'
+import { contactRequested, usesCombinedConsent, participantContact, privacyMissing, privacyNotice, readPrivacySettings } from '../src/survey/privacy'
 import { digest, erasureKey, privacyHash } from '../src/survey/privacy-crypto'
 import { testPrivacy } from './privacy-fixture'
 
@@ -42,4 +42,39 @@ test('restore suppression uses keyed digests rather than retaining plaintext sub
   assert.notEqual(erasureKey(key, secret), erasureKey(key, secret + 'other'))
   assert.ok(!erasureKey(key, secret).includes('fixture'))
   assert.throws(() => erasureKey(key, 'short'))
+})
+
+
+test('legacy separate notices keep their exact receipt hash after the additive mode field', () => {
+  const settings = testPrivacy()
+  assert.equal(settings.contactConsentMode, 'separate')
+  const notice = privacyNotice(settings)!
+  assert.equal('contactConsentMode' in notice, false)
+  assert.equal(privacyHash(notice), 'f9e0345d08a78fa189208ab5f33686cb40414e182b52af5796e16fcde58bc1ef')
+})
+
+test('combined consent is explicit, optional-contact-only, and records the new choice in the notice', () => {
+  const settings = testPrivacy({ contactConsentMode: 'combined', contactConsentText: '' })
+  assert.deepEqual(privacyMissing(settings), [])
+  const notice = privacyNotice(settings)!
+  assert.equal(usesCombinedConsent(notice), true)
+  assert.equal(notice.contactConsentMode, 'combined')
+  assert.equal(notice.contactConsentText, '')
+  assert.notEqual(privacyHash(notice), privacyHash(privacyNotice(testPrivacy())!))
+  for (const overrides of [{ contactMode: 'none' as const }, { contactMode: 'required' as const }, { legalBasis: 'legitimate-interests' as const }]) {
+    assert.ok(privacyMissing(testPrivacy({ ...settings, ...overrides })).length)
+    assert.equal(privacyNotice(testPrivacy({ ...settings, ...overrides })), undefined)
+  }
+})
+
+test('a combined contact choice requires common consent and nonblank contact input', () => {
+  const notice = privacyNotice(testPrivacy({ contactConsentMode: 'combined' }))!
+  assert.equal(contactRequested(notice, false, true, { email: 'contact@example.invalid' }), false)
+  assert.equal(contactRequested(notice, true, true, { email: '  ', name: ' ' }), false)
+  assert.equal(contactRequested(notice, true, false, { email: 'contact@example.invalid' }), true)
+  assert.equal(contactRequested(notice, true, false, { email: 'invalid' }), true, 'invalid input must be validated, not silently discarded')
+  assert.equal(contactRequested(notice, true, false, { name: 'Partial contact' }), true)
+  const separate = privacyNotice(testPrivacy())!
+  assert.equal(contactRequested(separate, true, false, { email: 'contact@example.invalid' }), false)
+  assert.equal(contactRequested(separate, false, true, { email: 'contact@example.invalid' }), true, 'separate contact choice keeps its original meaning')
 })

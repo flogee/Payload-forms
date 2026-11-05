@@ -30,6 +30,10 @@ export const privacyFields: Field[] = [
     { value: 'optional', label: 'Freiwillig für eine individuelle Rückmeldung' },
     { value: 'required', label: 'Name und E-Mail für jede Teilnahme erforderlich' },
   ], admin: { description: 'Name und E-Mail werden in einem getrennten Bereich gespeichert und bleiben der Antwort zuordenbar. Das ergibt keine anonyme Erhebung.' } },
+  { name: 'contactConsentMode', label: 'Darstellung der Einwilligung', type: 'select', defaultValue: 'separate', options: [
+    { value: 'separate', label: 'Getrennte Einwilligungen für Antworten und Kontakt' },
+    { value: 'combined', label: 'Eine gemeinsame Checkbox mit freiwilliger Kontaktangabe' },
+  ], admin: { description: 'Gemeinsam ist nur mit Rechtsgrundlage Einwilligung und freiwilligen Kontaktangaben möglich. Der gemeinsame Einwilligungstext muss die Kontaktaufnahme und Zuordnung ausdrücklich erklären. Bestehende Fassungen bleiben unverändert, bis diese Option bewusst gewählt wird.' } },
   { name: 'contactPurpose', label: 'Zweck und Umfang der Kontaktaufnahme', type: 'textarea', maxLength: 4000 },
   { name: 'contactRetention', label: 'Aufbewahrung und Löschung der Kontaktangaben', type: 'textarea', maxLength: 4000 },
   { name: 'consentText', label: 'Einwilligung zur Verarbeitung der Antworten', type: 'textarea', maxLength: 2000 },

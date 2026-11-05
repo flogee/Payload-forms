@@ -59,7 +59,7 @@ const privacyLabels: Record<Exclude<keyof PrivacySettings, 'reviewed'>, string> 
   purpose: 'Zweck', legalBasis: 'Rechtsgrundlage', legalBasisDetails: 'Erläuterung der Rechtsgrundlage',
   dataCategories: 'Erhobene Daten', recipients: 'Empfänger und Zugriff', internationalTransfers: 'Dienstleister und Datenübermittlungen',
   retention: 'Aufbewahrung der Antworten', retentionYears: 'Prüffrist in Kalenderjahren (0: ausgeschaltet)',
-  rights: 'Betroffenenrechte', complaintAuthority: 'Beschwerdestelle', contactMode: 'Kontaktangaben',
+  rights: 'Betroffenenrechte', complaintAuthority: 'Beschwerdestelle', contactMode: 'Kontaktangaben', contactConsentMode: 'Darstellung der Einwilligung',
   contactPurpose: 'Zweck der Kontaktaufnahme', contactRetention: 'Aufbewahrung der Kontaktangaben',
   consentText: 'Einwilligung zu den Antworten', contactConsentText: 'Einwilligung zur Kontaktaufnahme',
 }
