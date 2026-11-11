@@ -2,6 +2,8 @@
 import { useId, useRef, type CSSProperties } from 'react'
 import type { Answer, Question } from '@/survey/types'
 import './MatrixField.css'
+import { matrixSliderOptions } from '@/survey/matrix'
+import { MatrixSliderField } from './MatrixSliderField'
 
 export function MatrixField({ q, value, onChange, invalid, describedBy }: {
   q: Question
@@ -21,6 +23,9 @@ export function MatrixField({ q, value, onChange, invalid, describedBy }: {
     else next[key] = selected
     onChange(Object.keys(next).length ? next : undefined)
   }
+
+  const sliderOptions = matrixSliderOptions(q)
+  if (sliderOptions) return <MatrixSliderField q={q} {...sliderOptions} value={value} onChange={onChange} invalid={invalid} describedBy={describedBy} />
 
   return <div className="matrix-field" style={{ '--matrix-options': options.length } as CSSProperties}>
     <p className="matrix-field__hint" id={`${namespace}-hint`}>Je Zeile eine Auswahl. Du kannst Zeilen offenlassen.</p>
