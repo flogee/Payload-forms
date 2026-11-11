@@ -95,6 +95,7 @@ values, snapshots, validation, analysis and exports retain their formats.
 No answer or thumb is selected initially. Focusing the native range alone does
 not save its tentative position; pointer or rating-key interaction selects a
 value. Choosing unknown replaces the rating and a rating replaces unknown.
-Reset clears the row. The selected verbal label is announced and shown above
+Unchecking unknown leaves the row unanswered; no separate reset link is shown.
+The selected verbal label is announced and shown above
 the range. At narrow widths only numbered stops remain below it; wider layouts
 also show all verbal labels. No database migration is needed.
