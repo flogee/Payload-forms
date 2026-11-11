@@ -81,3 +81,21 @@ CSV `test_only` values and analysis `dataset` labels now reflect stored response
 The editing boundary is the first saved real response, not publication status. Pretests remain editable; their responses keep their original snapshots. The additive `20261103_180000_first_real_response_freeze` migration backfills existing real-response timestamps and makes future freezes permanent. Questionnaire edits acquire a conditional D1 edit token before Payload writes any child arrays; real inserts check that token atomically. Concurrent first responses prevent the edit before nested writes. Failed database replacements retain their token so a partial instrument cannot accept answers; verified recovery is described in INSTALL.md. Real-collection operator/privacy/human-administrator gates and machine access restrictions are unchanged. Browser requests send an additive instrument revision; evaluation-run requests continue to use their fixed snapshot.
 
 Pretest CSV exports preserve the union of snapshot-defined columns, include an `instrument_revision` digest, and include prior versions of the same survey. Each row is interpreted through its own snapshot. Aggregates use the retained snapshot when all answers share it; mixed question definitions return an explicit error instead of silently combining different instruments.
+
+
+## Five-step matrix presentation
+
+Matrices with exactly the ordered option values `1`, `2`, `3`, `4`, `5`,
+`unknown` now render each row as a discrete slider and a separate unknown
+checkbox. Numeric options must not be marked exclusive. Other matrix shapes
+retain their existing radio presentation. This is a frontend convention, not a
+new question kind or a stored definition change; row keys and string answer
+values, snapshots, validation, analysis and exports retain their formats.
+
+No answer or thumb is selected initially. Focusing the native range alone does
+not save its tentative position; pointer or rating-key interaction selects a
+value. Choosing unknown replaces the rating and a rating replaces unknown.
+Unchecking unknown leaves the row unanswered; no separate reset link is shown.
+The selected verbal label is announced and shown above
+the range. At narrow widths only numbered stops remain below it; wider layouts
+also show all verbal labels. No database migration is needed.
