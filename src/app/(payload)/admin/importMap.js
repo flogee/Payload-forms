@@ -25,6 +25,7 @@ import { SurveySharing as SurveySharing_0a9fa05a7258dd9cc65e6b6a12a39f46 } from 
 import { SurveyTools as SurveyTools_e0a3fefe3d885c66a97372f56acf1a39 } from '../../../components/SurveyTools'
 import { SurveyNotificationStatus as SurveyNotificationStatus_3f8ec5c24f34a087babb0ac6c81533b1 } from '../../../components/SurveyNotificationStatus'
 import { SurveyRetentionStatus as SurveyRetentionStatus_a6fbae3c32e2024aecbdf21dc86366c4 } from '../../../components/SurveyRetentionStatus'
+import { ResponseReader as ResponseReader_78f6b570dd50cb341b281c76e6c9bd4b } from '../../../components/ResponseReader'
 import { ResponsePrivacyActions as ResponsePrivacyActions_ce8dbb83019c2ed77310783e77325688 } from '../../../components/ResponsePrivacyActions'
 import { MediaBudgetStatus as MediaBudgetStatus_9a2f94441867bc70a7e639c19aaceaaa } from '../../../components/MediaBudgetStatus'
 import { AccessLogout as AccessLogout_ff2693fde932783ecf110dc9c3a13bd3 } from '../../../components/AccessLogout'
@@ -61,6 +62,7 @@ export const importMap = {
   "/components/SurveyTools#SurveyTools": SurveyTools_e0a3fefe3d885c66a97372f56acf1a39,
   "/components/SurveyNotificationStatus#SurveyNotificationStatus": SurveyNotificationStatus_3f8ec5c24f34a087babb0ac6c81533b1,
   "/components/SurveyRetentionStatus#SurveyRetentionStatus": SurveyRetentionStatus_a6fbae3c32e2024aecbdf21dc86366c4,
+  "/components/ResponseReader#ResponseReader": ResponseReader_78f6b570dd50cb341b281c76e6c9bd4b,
   "/components/ResponsePrivacyActions#ResponsePrivacyActions": ResponsePrivacyActions_ce8dbb83019c2ed77310783e77325688,
   "/components/MediaBudgetStatus#MediaBudgetStatus": MediaBudgetStatus_9a2f94441867bc70a7e639c19aaceaaa,
   "/components/AccessLogout#AccessLogout": AccessLogout_ff2693fde932783ecf110dc9c3a13bd3,
