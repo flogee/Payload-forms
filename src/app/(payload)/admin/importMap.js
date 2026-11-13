@@ -30,6 +30,7 @@ import { ResponsePrivacyActions as ResponsePrivacyActions_ce8dbb83019c2ed7731078
 import { MediaBudgetStatus as MediaBudgetStatus_9a2f94441867bc70a7e639c19aaceaaa } from '../../../components/MediaBudgetStatus'
 import { AccessLogout as AccessLogout_ff2693fde932783ecf110dc9c3a13bd3 } from '../../../components/AccessLogout'
 import { AccessLoginHelp as AccessLoginHelp_d679f5f64e7554be1b01e5211b0224b6 } from '../../../components/AccessLoginHelp'
+import { AnalysisNavLink as AnalysisNavLink_490fba84c83fe6118e46261983001f6c } from '../../../components/AnalysisNavLink'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 import { R2ClientUploadHandler as R2ClientUploadHandler_85cc02ed84006fcc91d3aff39dda669d } from '@payloadcms/storage-r2/client'
 
@@ -67,6 +68,7 @@ export const importMap = {
   "/components/MediaBudgetStatus#MediaBudgetStatus": MediaBudgetStatus_9a2f94441867bc70a7e639c19aaceaaa,
   "/components/AccessLogout#AccessLogout": AccessLogout_ff2693fde932783ecf110dc9c3a13bd3,
   "/components/AccessLoginHelp#AccessLoginHelp": AccessLoginHelp_d679f5f64e7554be1b01e5211b0224b6,
+  "/components/AnalysisNavLink#AnalysisNavLink": AnalysisNavLink_490fba84c83fe6118e46261983001f6c,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
   "@payloadcms/storage-r2/client#R2ClientUploadHandler": R2ClientUploadHandler_85cc02ed84006fcc91d3aff39dda669d
 }
