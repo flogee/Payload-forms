@@ -10,7 +10,7 @@ Create versioned questionnaires, share a participation link or QR code, and revi
 - A section-based editor with rich text, image blocks, and per-questionnaire header branding.
 - Participation links without login with protected team administration, individual responses, exports, and analysis.
 - Readable individual responses using the questionnaire snapshot saved at submission, with a print / save-as-PDF button. Open a response from the protected response list; technical records remain available in a collapsed section. Printed reports contain the answer content and metadata, without separate contact records or administration controls.
-- A human-team-only overall report with question-level frequencies, five-step matrix distributions, numeric summaries and expandable original text answers. Real and pretest responses remain separate. Print or save the complete report as PDF, with an option to omit open answers. ReUI-derived chart primitives reuse the existing Recharts dependency.
+- A human-team-only overall report with question-level frequencies, five-step matrix distributions, numeric summaries and expandable original text answers. Open it through **Auswertungen** in the administration navigation. Real and pretest responses remain separate. Print or save the complete report as PDF, with an option to omit open answers. ReUI-derived chart primitives reuse the existing Recharts dependency.
 - Versioned privacy notices, separate contact records, retention reminders, questionnaire duplication and JSON/Markdown/CSV downloads.
 - Charts and SVG downloads, plus limited MCP tools for drafts and reduced statistical reports.
 - Atomic usage budgets, rate limits, bounded uploads and request bodies, and bounded operational warnings.

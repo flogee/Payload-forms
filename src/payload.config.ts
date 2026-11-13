@@ -72,6 +72,7 @@ database.init = args => {
 export default buildConfig({
   admin: { user: 'users', importMap: { baseDir: dirname }, meta: { titleSuffix: '· Payload Forms' },
     components: {
+      beforeNavLinks: ['/components/AnalysisNavLink#AnalysisNavLink'],
       logout: { Button: '/components/AccessLogout#AccessLogout' },
       beforeLogin: [{ path: '/components/AccessLoginHelp#AccessLoginHelp', serverProps: { enabled: cloudflare.env.ACCESS_LOGIN_ENABLED === '1' } }],
     } },

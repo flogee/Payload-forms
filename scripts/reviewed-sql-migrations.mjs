@@ -8,6 +8,8 @@ import { projectRoot } from './install-config.mjs'
 // and installs fixed triggers. CLI initialization remains free of data writes.
 // Pin config (including migration directory selection), index, and CLI onInit
 // suppression too. Changes require a fresh source review, not automatic rehashing.
+// Reviewed 2026-11-13: config adds only a static admin navigation component.
+// Migration selection, CLI initialization and all 16 migration files are unchanged.
 const reviewedSources = {
   "src/migrations/20261103_180000_first_real_response_freeze.ts": "77ee2e89c89cf0cb17fbc0b9f4c59d1c415e9ffd74dc08d70252ee646c9438c9", // gitleaks:allow -- reviewed source SHA-256
   "src/migrations/20261005_100813_initial_schema.ts": "2b60c02e2d320d1e26c6bbc58728455bf31b3b57dc843fa291b5eafea0700800", // gitleaks:allow -- reviewed source SHA-256
@@ -26,7 +28,7 @@ const reviewedSources = {
   "src/migrations/20261018_170000_qa_machine_owner.ts": "65dc1347a593e32092b8f5eaf8a1192385b819655a6c0ee6e4a134c6154b857c", // gitleaks:allow -- reviewed source SHA-256
   "src/migrations/20261019_100000_qa_machine_budgets.ts": "43f77cc714d81caa17f8147506ae27448eb11e9cceac097c18c319a9023169af", // gitleaks:allow -- reviewed source SHA-256
   "src/migrations/index.ts": "0519e4e7758ba15f64974171e9ba9e4d28f7bdb6237fb2b864c5ff1be432e8cc", // gitleaks:allow -- reviewed source SHA-256
-  "src/payload.config.ts": "128cc7fcc82b0329d80e81e69e4c060550707de2121cc63ef6af4f27d4419673", // gitleaks:allow -- reviewed source SHA-256
+  "src/payload.config.ts": "65fbd59d9df51d091f7f2c27bb7a1f3e69afb3d2f9669d98698ec272a2a2407b", // gitleaks:allow -- reviewed source SHA-256
   "node_modules/payload/dist/bin/migrate.js": "caa258402b1327a6f87c5716c4537b5422f2f2ab43d8f9538ab656bd6c87177e", // gitleaks:allow -- reviewed source SHA-256
 }
 
