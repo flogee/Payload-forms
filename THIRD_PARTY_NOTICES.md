@@ -26,3 +26,9 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+## ReUI chart primitives
+
+`src/components/report/Chart.tsx` adapts the ChartContainer, tooltip and legend primitives from [ReUI](https://github.com/keenthemes/reui/blob/067aa0dc7f8bbfec1cd76fc5ad31f842be5f569a/registry/bases/radix/ui/chart.tsx), revision `067aa0dc7f8bbfec1cd76fc5ad31f842be5f569a`. Tailwind classes and raw style injection were replaced by existing Forms design tokens and React style properties. No registry installer is executed and no new dependency is required.
+
+Copyright (c) 2025 Keenthemes Inc. Distributed under the MIT License; see [license](third_party/reui-LICENSE.txt).

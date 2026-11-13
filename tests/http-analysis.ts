@@ -16,6 +16,14 @@ export async function checkAnalysisHTTP(base: string, token: string, surveyID: n
     assert.equal(teamPage.status, 200); assert.ok(html.includes('analysis-overview'))
     assert.ok(!html.includes('HTTP TEST ONLY'), 'team charts do not serialize raw text')
   }
+  for (const query of [`surveyID=${surveyID}`, 'demo=1']) {
+    const anonymous = await fetch(`${base}/auswertung/bericht?${query}`), text = await anonymous.text()
+    assert.equal(anonymous.status, 200); assert.ok(text.includes('Zum Teamzugang'))
+    assert.ok(!text.includes('report-basis'), 'anonymous users never receive the human report')
+    const team = await fetch(`${base}/auswertung/bericht?${query}`, { headers: auth }), html = await team.text()
+    assert.equal(team.status, 200); assert.ok(html.includes('report-basis'))
+    assert.ok(html.includes('Drucken / als PDF speichern'))
+  }
   const demo = await fetch(`${base}/api/survey/analysis?demo=1`, { headers: auth })
   assert.equal(demo.status, 200); assert.match(demo.headers.get('cache-control')!, /no-store/)
   const report = await demo.json() as SharedAnalysisReport
