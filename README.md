@@ -10,6 +10,7 @@ Create versioned questionnaires, share a participation link or QR code, and revi
 - A section-based editor with rich text, image blocks, and per-questionnaire header branding.
 - Participation links without login with protected team administration, individual responses, exports, and analysis.
 - Readable individual responses using the questionnaire snapshot saved at submission, with a print / save-as-PDF button. Open a response from the protected response list; technical records remain available in a collapsed section. Printed reports contain the answer content and metadata, without separate contact records or administration controls.
+- A human-team-only overall report with question-level frequencies, five-step matrix distributions, numeric summaries and expandable original text answers. Real and pretest responses remain separate. Print or save the complete report as PDF, with an option to omit open answers. ReUI-derived chart primitives reuse the existing Recharts dependency.
 - Versioned privacy notices, separate contact records, retention reminders, questionnaire duplication and JSON/Markdown/CSV downloads.
 - Charts and SVG downloads, plus limited MCP tools for drafts and reduced statistical reports.
 - Atomic usage budgets, rate limits, bounded uploads and request bodies, and bounded operational warnings.
@@ -53,4 +54,4 @@ Usage limits reduce specific application operations; they are not an account-wid
 
 Copyright (c) 2026 Florian Bauernfeind (Entribe). [MIT License](LICENSE): commercial use, modification, redistribution and forks are welcome. Retain the copyright and license notice in redistributed copies or substantial portions. A visible UI credit is appreciated but is not an additional license condition.
 
-See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the vendored Payload authentication compatibility code. This project is independent and is not endorsed by Payload CMS or OpenAI.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the vendored Payload authentication compatibility code and adapted ReUI chart primitives. This project is independent and is not endorsed by Payload CMS, ReUI or OpenAI.

@@ -99,3 +99,24 @@ Unchecking unknown leaves the row unanswered; no separate reset link is shown.
 The selected verbal label is announced and shown above
 the range. At narrow widths only numbered stops remain below it; wider layouts
 also show all verbal labels. No database migration is needed.
+
+## Human-only overall report
+
+`/auswertung/bericht` adds a protected HTML/print report for a human team account.
+It reads one survey and one explicitly separated real/pretest cohort through
+ordinary collection access checks, using the retained response snapshots.
+Original qualitative answers stay in this route and its client-rendered report;
+they are not added to the aggregate API, SVG/CSV/JSON exports or MCP. Separate
+contact records are never loaded. PDFs are internal reports and can contain
+identifying free text, even when separate contact records are absent.
+
+Question/row denominators, missing answers and visibility exclusions remain
+separate. Five-step matrices exclude unknown answers from the numeric
+distribution, and numeric summaries exclude unknown/not-applicable values.
+The report refuses mixed snapshot definitions and cohorts above the existing
+1,000-response analysis limit rather than showing a partial result. Reopening
+or refreshing the report reads the current data; no background job is added.
+
+This is an additive human UI route without schema, migration, stored-answer,
+authentication or configuration changes. The adapted MIT ReUI primitives use
+the existing Recharts installation without new dependencies or remote assets.

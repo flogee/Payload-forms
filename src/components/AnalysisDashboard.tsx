@@ -40,6 +40,7 @@ export function AnalysisDashboard({ report, surveys, demo = false }: Props) {
         <span className="analysis-badge">{demo ? 'Demo · erfundene Angaben' : report.dataset === 'test' ? 'Testdaten · keine Erhebung' : report.dataset === 'real' ? 'Erhebungsdaten · Teamzugang' : 'Test- und Erhebungsdaten · prüfen'}</span>
       </div>
       <div className="analysis-toolbar">
+        {!demo && <a className="analysis-download" href={`/auswertung/bericht?surveyID=${report.survey.id}`}>Gesamtbericht mit PDF öffnen</a>}
         {!demo && <form action="/auswertung" method="get">
           <label htmlFor={`${id}-survey`}>Fragebogen & Fassung</label>
           <div className="analysis-select-row"><select id={`${id}-survey`} name="surveyID" defaultValue={report.survey.id}>
