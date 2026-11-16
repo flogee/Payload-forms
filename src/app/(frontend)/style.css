@@ -18,3 +18,5 @@
 .survey-content--image img { display: block; width: auto; max-width: 100%; height: auto; border-radius: var(--radius); }
 .survey-content figcaption { margin-top: 8px; font-size: 13px; color: var(--muted); white-space: pre-wrap; }
 .survey-content__image-fallback { padding: 16px; border: 1px solid var(--line); background: var(--wash); font-size: 14px; }
+
+.intro-start{margin-bottom:24px}@media(max-width:700px){.intro-start{width:100%;justify-content:space-between}}
