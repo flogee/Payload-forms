@@ -70,6 +70,7 @@ export interface Config {
   collections: {
     users: User;
     surveys: Survey;
+    'survey-corrections': SurveyCorrection;
     'evaluation-runs': EvaluationRun;
     responses: Response;
     'response-contacts': ResponseContact;
@@ -96,6 +97,7 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     surveys: SurveysSelect<false> | SurveysSelect<true>;
+    'survey-corrections': SurveyCorrectionsSelect<false> | SurveyCorrectionsSelect<true>;
     'evaluation-runs': EvaluationRunsSelect<false> | EvaluationRunsSelect<true>;
     responses: ResponsesSelect<false> | ResponsesSelect<true>;
     'response-contacts': ResponseContactsSelect<false> | ResponseContactsSelect<true>;
@@ -215,6 +217,11 @@ export interface Survey {
   title: string;
   version: string;
   phase: 'draft' | 'pretest' | 'live' | 'closed';
+  editorialCorrection?: boolean | null;
+  /**
+   * Zum Beispiel: Logo aktualisiert oder missverständliche Formulierung präzisiert. Wird mit dem bisherigen und neuen Stand protokolliert.
+   */
+  correctionReason?: string | null;
   introduction?:
     | {
         text: string;
@@ -402,7 +409,7 @@ export interface Survey {
     reviewed?: boolean | null;
   };
   /**
-   * Ersetzt die Marke oben links im Teilnahmeformular. Auch nach der ersten echten Antwort änderbar; Fragen und Datenschutz sind dann eingefroren.
+   * Ersetzt die Marke oben links im Teilnahmeformular. Auch nach der ersten echten Antwort änderbar; Struktur und Datenschutz bleiben eingefroren. Für Formulierungen und Bilder in der Einleitung den Korrekturmodus verwenden.
    */
   branding?: {
     mode?: ('default' | 'text' | 'logo') | null;
@@ -455,6 +462,42 @@ export interface Media {
   filesize?: number | null;
   width?: number | null;
   height?: number | null;
+}
+/**
+ * Unveränderliches Protokoll kleiner Korrekturen. Bisherige Antworten behalten ihre ursprüngliche Fragebogenfassung.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "survey-corrections".
+ */
+export interface SurveyCorrection {
+  id: number;
+  survey: number | Survey;
+  correctedBy: number | User;
+  reason: string;
+  status: 'pending' | 'committed';
+  before:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  after:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  beforeHash: string;
+  afterHash: string;
+  editToken: string;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -840,6 +883,10 @@ export interface PayloadLockedDocument {
         value: number | Survey;
       } | null)
     | ({
+        relationTo: 'survey-corrections';
+        value: number | SurveyCorrection;
+      } | null)
+    | ({
         relationTo: 'evaluation-runs';
         value: number | EvaluationRun;
       } | null)
@@ -995,6 +1042,8 @@ export interface SurveysSelect<T extends boolean = true> {
   title?: T;
   version?: T;
   phase?: T;
+  editorialCorrection?: T;
+  correctionReason?: T;
   introduction?:
     | T
     | {
@@ -1128,6 +1177,23 @@ export interface SurveysSelect<T extends boolean = true> {
     | {
         enabled?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "survey-corrections_select".
+ */
+export interface SurveyCorrectionsSelect<T extends boolean = true> {
+  survey?: T;
+  correctedBy?: T;
+  reason?: T;
+  status?: T;
+  before?: T;
+  after?: T;
+  beforeHash?: T;
+  afterHash?: T;
+  editToken?: T;
   updatedAt?: T;
   createdAt?: T;
 }

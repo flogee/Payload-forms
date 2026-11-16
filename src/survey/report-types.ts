@@ -13,6 +13,7 @@ export type ReportQuestion = Pick<Question, 'id' | 'block' | 'label' | 'kind' | 
 }
 export type SurveyReport = {
   aggregate: AnalysisReport
+  usesCorrectedLabels?: boolean
   sections: { id: string; title: string; questions: ReportQuestion[] }[]
   dataset: 'real' | 'test'; excludedResponses: number; totalResponses: number
   medianDurationSeconds: number | null

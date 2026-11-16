@@ -1,7 +1,7 @@
 import type { Payload, PayloadRequest, TypedUser } from 'payload'
 import { isTeamUser } from '../auth/team'
 import { analyze, ANALYSIS_LIMIT } from './analysis'
-import { digest } from './privacy-crypto'
+import { resolveAnalysisDefinition } from './analysis-definition'
 import { definitionSchema } from './validation'
 import { fromStored } from './storage'
 import type { Answers, Definition } from './types'
@@ -40,8 +40,7 @@ export async function loadAnalysis(payload: Payload, surveyID: number, scope: Sc
   if (rows.totalDocs > ANALYSIS_LIMIT) throw new AnalysisError('Mehr als 1.000 Antworten: paginierte Auswertung erforderlich. Es werden keine Teilergebnisse angezeigt.', 422)
   const current=fromStored(survey)
   const definitions=rows.docs.map(r=>r.instrument==null?current:definitionSchema.parse(r.instrument) as Definition)
-  if (new Set(definitions.map(d=>digest({version:d.version,sections:d.sections}))).size>1) throw new AnalysisError('Die Antworten stammen aus unterschiedlichen Fragebogenständen. Bitte getrennt anhand des CSV-Exports auswerten.',422)
-  const definition=definitions[0]??current
+  const { definition } = await resolveAnalysisDefinition(payload, surveyID, current, definitions, scope)
   return analyze(definition, rows.docs.map(r => ({ answers: r.answers as Answers, createdAt: r.createdAt, testOnly: r.testOnly })),
     { id: survey.id, title: survey.title, slug: survey.slug, version: definition.version, phase: survey.phase })
 }

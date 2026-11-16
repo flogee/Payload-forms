@@ -11,6 +11,16 @@ const formData = (doc: any) => Object.fromEntries(['title', 'slug', 'version', '
   .filter(k => doc[k] !== undefined).map(k => [k, structuredClone(doc[k])]))
 const childWrites = (h: any) => h.events.filter((e: any) => /^(insert into|delete from|update) "surveys_/.test(e.sql))
 
+test('missing server validation state cannot bypass the survey persistence guard', async () => {
+  const { guardSurveyEdits } = await persistenceModule
+  let writes = 0
+  const guarded = guardSurveyEdits(async (): Promise<null> => { writes++; return null })
+  await assert.rejects(guarded.call({} as any, { collection: 'surveys', id: 1, req: {}, data: { title: 'Unvalidated' } } as any), /Bearbeitungsprüfung/)
+  assert.equal(writes, 0)
+  await guarded.call({} as any, { collection: 'other', id: 1, data: {} } as any)
+  assert.equal(writes, 1)
+})
+
 test('actual Payload pipeline preserves unchanged arrays and persists intended array mutations', async () => {
   const h = await createHarness(root)
   try {

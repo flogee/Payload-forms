@@ -12,6 +12,7 @@ import { answerFormats } from '../components/SurveyEditor.helpers'
 import { livePrivacyReady, realSurveysEnabled } from '../survey/participation'
 import { managesTeam } from '../auth/team'
 import { instrumentFields, rememberSurveyArrays } from '../survey/persist-update'
+import { editorialState, prepareEditorialCorrection } from '../survey/editorial-correction'
 // MCP impersonates its owning team account; operational addresses stay private.
 const notificationAccess = ({ req }: { req: PayloadRequest }) => staff({ req }) &&
   !(req.user && '_strategy' in req.user && req.user._strategy === 'mcp-api-key')
@@ -37,8 +38,18 @@ export const Surveys: CollectionConfig = {
   }, disableDuplicate: true,
   access: { read: ({ req }) => staff({ req }) ? req.user && '_strategy' in req.user && req.user._strategy === 'mcp-api-key' ? { phase: { in: ['draft', 'pretest'] } } : true : false, create: staff, update: staff, delete: () => false },
   hooks: { beforeChange: [async ({ data, originalDoc, operation, req }) => {
+    let correction
     if (operation === 'update' && originalDoc?.firstRealResponseAt) {
-      if (instrumentFields.some(k => data[k] !== undefined && canonicalJSON(data[k]) !== canonicalJSON(originalDoc[k]))) throw new APIError('Diese Erhebungsfassung ist seit der ersten echten Antwort eingefroren. Für Änderungen bitte einen neuen Entwurf mit neuer Versionskennung anlegen.', 400)
+      if (instrumentFields.some(k => data[k] !== undefined && canonicalJSON(data[k]) !== canonicalJSON(originalDoc[k]))) {
+        let same = false
+        try { same = canonicalJSON(editorialState(originalDoc)) === canonicalJSON(editorialState({ ...originalDoc, ...data })) }
+        catch (error) { throw new APIError(`Diese Fassung ist eingefroren. ${error instanceof Error ? error.message : 'Ungültige Fragebogenfassung.'}`, 400) }
+        if (same) {
+          // Editor-only IDs, empty values and Lexical metadata do not constitute
+          // a correction and must not trigger a nested child-table replacement.
+          for (const k of instrumentFields) if (data[k] !== undefined) data[k] = structuredClone(originalDoc[k])
+        } else correction = prepareEditorialCorrection(originalDoc, { ...originalDoc, ...data }, req.user, data.editorialCorrection, data.correctionReason)
+      }
       if (data.phase && ![originalDoc.phase, 'closed'].includes(data.phase)) throw new APIError('Eine gestartete Fassung kann nur geschlossen werden.', 400)
     }
     const merged = { ...originalDoc, ...data }
@@ -77,7 +88,9 @@ export const Surveys: CollectionConfig = {
     // Freeze the same normalized profile used by the participant receipt and
     // atomic SQL guard; textarea whitespace must not make a reviewed form unusable.
     if ((operation === 'create' || !originalDoc?.firstRealResponseAt) && (data.privacy !== undefined || merged.phase === 'live')) data.privacy = privacy
-    if (operation === 'update' && originalDoc?.id != null) rememberSurveyArrays(req, originalDoc.id, originalDoc)
+    if (operation === 'update' && originalDoc?.id != null) rememberSurveyArrays(req, originalDoc.id, originalDoc, correction, { ...originalDoc, ...data })
+    delete data.editorialCorrection
+    delete data.correctionReason
     return data
   }] },
   fields: [
@@ -87,6 +100,14 @@ export const Surveys: CollectionConfig = {
     { type: 'row', fields: [
         { name: 'version', label: 'Erhebungsfassung', type: 'text', required: true, unique: true },
         { name: 'phase', label: 'Status', type: 'select', required: true, defaultValue: 'draft', options: [{ label: 'Entwurf', value: 'draft' }, { label: 'Pretest mit Testdaten', value: 'pretest' }, { label: 'Echte Erhebung (Betreiberfreigabe erforderlich)', value: 'live' }, { label: 'Geschlossen', value: 'closed' }] },
+    ] },
+    { type: 'collapsible', label: 'Korrekturmodus', admin: { initCollapsed: true, condition: data => !!data.firstRealResponseAt }, fields: [
+      { name: 'correctionNotice', type: 'ui', admin: { components: { Field: '/components/SurveyCorrectionNotice#SurveyCorrectionNotice' } } },
+      { name: 'editorialCorrection', label: 'Ich bestätige: Die Bedeutung der Fragen und Antwortmöglichkeiten bleibt unverändert.', type: 'checkbox', virtual: true,
+        admin: { readOnly: false }, access: { create: () => false, update: ({ req }) => managesTeam(req.user) }, hooks: { afterRead: [() => false] } },
+      { name: 'correctionReason', label: 'Grund der Korrektur', type: 'textarea', maxLength: 500, virtual: true,
+        access: { create: () => false, update: ({ req }) => managesTeam(req.user) }, hooks: { afterRead: [() => ''] },
+        admin: { readOnly: false, description: 'Zum Beispiel: Logo aktualisiert oder missverständliche Formulierung präzisiert. Wird mit dem bisherigen und neuen Stand protokolliert.' } },
     ] },
     // Keep tabs unnamed: names would nest stored fields and change the schema.
     { type: 'tabs', tabs: [
@@ -101,7 +122,7 @@ export const Surveys: CollectionConfig = {
         { name: 'privacy', label: 'Datenschutz und Teilnahme', type: 'group', fields: privacyFields },
       ] },
       { label: 'Veröffentlichen', description: 'Teilnahmelink, Vorschau und Downloads verwenden den gespeicherten Stand. Den Status oberhalb der Reiter ändern.', fields: [
-        { name: 'branding', label: 'Kopfzeile', type: 'group', admin: { description: 'Ersetzt die Marke oben links im Teilnahmeformular. Auch nach der ersten echten Antwort änderbar; Fragen und Datenschutz sind dann eingefroren.' }, fields: [
+        { name: 'branding', label: 'Kopfzeile', type: 'group', admin: { description: 'Ersetzt die Marke oben links im Teilnahmeformular. Auch nach der ersten echten Antwort änderbar; Struktur und Datenschutz bleiben eingefroren. Für Formulierungen und Bilder in der Einleitung den Korrekturmodus verwenden.' }, fields: [
           { name: 'mode', label: 'Anzeige oben links', type: 'select', defaultValue: 'default', options: [
             { value: 'default', label: 'Standard (Payload Forms / Sample)' }, { value: 'text', label: 'Eigener Text' }, { value: 'logo', label: 'Logo' },
           ] },

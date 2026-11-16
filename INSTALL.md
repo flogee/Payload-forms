@@ -131,7 +131,7 @@ Before opening a particular real questionnaire, a human administrator must save 
 
 The live participant page presents the saved notice and a separate participation confirmation. The submission contract requires `confirmParticipation: true`; fictional pretests retain `confirmTest: true`. Missing, mixed or wrong-mode confirmations fail. A live submission requires the current notice hash and any consent required by its legal basis. Optional contact information can always be omitted. An opted-in live contact needs its own consent and a valid email address; a personal name is optional. Pretests continue to require invented contact names and `.invalid` email addresses. Contacts remain separate from answers, but their association remains possible for follow-up; this is not anonymous data storage.
 
-An instrument, version, slug and privacy notice freeze when the first real (`testOnly=false`) response is saved. Drafts and pretests remain editable even after test responses; an activated live survey is editable until its first real response. Closing a form without real responses does not freeze it. After a real response, close that version and duplicate it to a new draft/version for changes; the frozen version cannot reopen or switch mode. Deleting responses does not remove its freeze. Operational branding, notifications and retention reminders retain their existing edit rules. Live insertions atomically check the current phase, reviewed privacy profile, edit token and server-read revision. Browser forms also reject a changed instrument and request a reload; existing API clients may omit the additive `instrumentRevision` field. Every response retains its own instrument snapshot, and evaluation runs continue to validate against their fixed run snapshot. New real responses and separate contacts carry `testOnly=false`; old test records stay unchanged. Normal CSV exports exclude contacts and preserve each record's actual test marker. Protected team analysis identifies test, real or mixed datasets, including after closure. Machine identities cannot access real instruments, raw real responses, separate contacts or real analysis; QA/evaluation runs remain fictional pretests even when this flag is enabled.
+An instrument, version, slug and privacy notice freeze when the first real (`testOnly=false`) response is saved. Drafts and pretests remain editable even after test responses; an activated live survey is editable until its first real response. Closing a form without real responses does not freeze it. After a real response, use the human-administrator correction mode for meaning-preserving wording and existing-image replacements (see below). For structural changes, close that version and duplicate it to a new draft/version; the frozen version cannot reopen or switch mode. Deleting responses does not remove its freeze. Operational branding, notifications and retention reminders retain their existing edit rules. Live insertions atomically check the current phase, reviewed privacy profile, edit token and server-read revision. Browser forms also reject a changed instrument and request a reload; existing API clients may omit the additive `instrumentRevision` field. Every response retains its own instrument snapshot, and evaluation runs continue to validate against their fixed run snapshot. New real responses and separate contacts carry `testOnly=false`; old test records stay unchanged. Normal CSV exports exclude contacts and preserve each record's actual test marker. Protected team analysis identifies test, real or mixed datasets, including after closure. Machine identities cannot access real instruments, raw real responses, separate contacts or real analysis; QA/evaluation runs remain fictional pretests even when this flag is enabled.
 
 To stop real collection, set the selected flag to `"0"` and release that configuration. New runtime requests then stop serving real participant forms, notices, scoped images, share links and submissions. Removing the runtime flag also fails closed, even for an enabled build. Saved responses remain real, team-protected and subject to the existing erasure/retention workflow; disabling the flag does not delete, anonymize or relabel them. Fictional pretests continue to work. Closing an individual live version is also available while the operator flag is off.
 
@@ -159,3 +159,46 @@ Apply additive migration `20261103_180000_first_real_response_freeze` before ser
 The edit token coordinates Payload's multi-statement updates with the first real response. Validation failures happen before acquiring it. Failed database replacements, process termination or a failed token release leave the token set and block further edits/submissions for that form. Before clearing `surveys.instrument_edit_token`, verify the writer has stopped and inspect the stored instrument for a partial failed update; never clear `first_real_response_at`. There is deliberately no unsafe automatic expiry. Code rollback and database recovery remain separate operations; the migration has no automatic down path.
 
 Pretest CSV exports preserve the union of snapshot-defined columns, include an `instrument_revision` digest, and include prior versions of the same survey. Each row is interpreted through its own snapshot. Aggregates use the retained snapshot when all answers share it; mixed question definitions return an explicit error instead of silently combining different instruments.
+
+
+### Editorial corrections after the first real response
+
+Apply additive migration `20261116_081552_editorial_corrections` after the existing
+16 migrations and before serving this release. It creates `survey_corrections`
+and adds one nullable admin-lock relationship and index. It does not rebuild
+existing tables, rewrite responses or change accounts, bindings or budgets.
+Take the operator-owned backup/recovery checkpoint before the authorized remote
+migration. There is no destructive automatic down migration; a code rollback
+keeps the audit table and the permanent first-response freeze.
+
+In the survey editor, a human administrator opens **Korrekturmodus**, confirms
+that the meaning remains unchanged and enters a reason (up to 500 characters).
+They can correct titles, question/option/row wording, explanations, links and
+existing image references/alt text/captions. Upload a new image and replace the
+reference; old uploaded files remain immutable. Codes, question types, order,
+scales, branching, block placement, privacy, version and slug remain fixed.
+Adding/removing questions, options or content blocks requires a new version.
+Software cannot judge whether wording changes meaning; the administrator owns
+that confirmation. This is not permission to change the research construct.
+
+Each save clears the confirmation and reason. The immutable human-readable
+**Fragebogenkorrekturen** list retains actor, reason, before/after snapshots and
+pending/committed state. Machine clients have no access. Every existing response
+keeps its original instrument; individual views and CSV exports retain it.
+Human analysis may use current labels only when committed correction edges link
+all selected snapshot definitions to the current structurally identical one.
+Unapproved mixed pretest snapshots still require separate analysis. History is
+bounded to 1,000 corrections; larger/incomplete history never silently combines
+mixed instruments.
+
+The edit token also serializes operational saves (including closing) with full
+corrections. A stale correction is rejected before nested writes. Audit creation
+and lock acquisition share a D1 transaction; audit commitment and unlock share a
+second transaction after Payload finishes. Failed/crashed writers retain the
+lock and a pending audit, blocking participation and edits. Before recovery,
+verify that the writer stopped, compare the persisted instrument with both audit
+snapshots and inspect child arrays. Restore a complete verified state while
+locked; only then reconcile the audit status and clear the matching token.
+Never mark a partial correction committed, erase the audit or clear the permanent
+`first_real_response_at`. Preserve pending audit evidence if restoring the old
+state. Recovery is an explicit operator operation, not an automatic timeout.

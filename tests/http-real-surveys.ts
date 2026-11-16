@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { toStored } from '../src/survey/storage'
 import { privacyNotice } from '../src/survey/privacy'
-import { privacyHash } from '../src/survey/privacy-crypto'
+import { digest, privacyHash } from '../src/survey/privacy-crypto'
 import { testPrivacy } from './privacy-fixture'
 import type { Definition } from '../src/survey/types'
 
@@ -25,7 +25,8 @@ export async function checkRealSurveysHTTP(base: string, token: string, apiKey: 
   const imageID = images.docs[0].id as number
   const definition: Definition = { version: realFixtureSlug, introduction: ['Synthetic live-mode contract test.'],
     introContent: [{ blockType: 'image', image: imageID, alt: 'Synthetic fixture image' }],
-    sections: [{ id: 'fixture', title: 'Synthetic fixture', questions: [{ id: 'Q1', block: '1', label: 'Optional fictional text', kind: 'text' }] }] }
+    sections: [{ id: 'fixture', title: 'Synthetic fixture', questions: [{ id: 'Q1', block: '1', label: 'Optional fictional text', kind: 'text' },
+      { id: 'Q2', block: '1', label: 'Synthetic choice', kind: 'single', options: [{ value: 'a', label: 'First option' }, { value: 'b', label: 'Second option' }] }] }] }
   const create = await json('/api/surveys', { title: 'SYNTHETIC LIVE MODE TEST', slug: realFixtureSlug, phase: 'draft', ...toStored(definition) })
   assert.equal(create.status, 201)
   const survey = (await create.json() as any).doc, path = `/api/surveys/${survey.id}`
@@ -82,9 +83,40 @@ export async function checkRealSurveysHTTP(base: string, token: string, apiKey: 
   assert.ok(!csv.includes('synthetic@example.org'))
   const report = await (await request(`/api/survey/analysis?surveyID=${survey.id}`, { headers: auth })).json() as any
   assert.equal(report.dataset, 'real')
+  // Real persistence path, only in this disposable synthetic installation.
+  const originalResponse = structuredClone(response)
+  const current = await (await request(path + '?depth=0', { headers: auth })).json() as any
+  const sections = structuredClone(current.sections)
+  sections[0].questions[0].label = 'Clarified fictional text'
+  sections[0].questions[1].options[0].label = 'Clarified first option'
+  const corrected = await json(path, { sections, introContent: [{ ...current.introContent[0], alt: 'Clarified synthetic logo' }],
+    editorialCorrection: true, correctionReason: 'Synthetic wording and logo correction' }, 'PATCH')
+  assert.equal(corrected.status, 200, 'human administrator can correct wording and logo without a new version')
+  const correctedDoc = (await corrected.json() as any).doc
+  assert.equal(correctedDoc.version, definition.version); assert.equal(correctedDoc.slug, realFixtureSlug)
+  assert.equal(correctedDoc.firstRealResponseAt, current.firstRealResponseAt)
+  assert.equal(correctedDoc.editorialCorrection, false, 'confirmation is cleared after saving')
+  assert.equal(correctedDoc.correctionReason, '')
+  const retained = await (await request(`/api/responses/${savedID}?depth=0`, { headers: auth })).json() as any
+  assert.deepEqual(retained.instrument, originalResponse.instrument, 'old response keeps its original wording')
+  assert.deepEqual(retained.answers, originalResponse.answers)
+  const auditPath = `/api/survey-corrections?depth=0&where[survey][equals]=${survey.id}`
+  const audits = await (await request(auditPath, { headers: auth })).json() as any
+  assert.equal(audits.totalDocs, 1); assert.equal(audits.docs[0].status, 'committed')
+  assert.equal(audits.docs[0].after.definition.sections[0].questions[0].label, 'Clarified fictional text')
+  await status(request(auditPath), 403, 'anonymous cannot read correction history')
+  await status(json(`/api/survey-corrections/${audits.docs[0].id}`, { reason: 'Tamper' }, 'PATCH'), 403, 'audit history cannot be edited')
+  await status(json('/api/survey/submit', { ...input, submissionID: randomUUID(), instrumentRevision: digest(definition) }, 'POST', {}), 409, 'an open old browser must reload after a correction')
+  await status(json('/api/survey/submit', { ...input, submissionID: randomUUID() }, 'POST', {}), 201, 'the same public survey accepts new responses after correction')
+  const correctedReport = await request(`/api/survey/analysis?surveyID=${survey.id}`, { headers: auth })
+  assert.equal(correctedReport.status, 200, 'approved correction history permits combined analysis of both retained snapshots')
+  assert.ok((await correctedReport.text()).includes('Clarified fictional text'))
+  await status(json(path, { title: 'Unconfirmed second correction' }, 'PATCH'), 400, 'confirmation must be renewed for every correction')
+  const changedCodes = structuredClone(sections); changedCodes[0].questions[1].options[0].value = 'changed'
+  await status(json(path, { sections: changedCodes, editorialCorrection: true, correctionReason: 'Invalid structure' }, 'PATCH'), 400, 'correction mode cannot change answer codes')
   const chart = await request(`/auswertung?surveyID=${survey.id}`, { headers: auth })
   assert.ok((await chart.text()).includes('Erhebungsdaten · Teamzugang'))
-  for (const endpoint of [`/api/surveys/${survey.id}`, `/api/responses/${savedID}`, '/api/response-contacts']) {
+  for (const endpoint of [`/api/surveys/${survey.id}`, `/api/responses/${savedID}`, '/api/response-contacts', auditPath]) {
     const denied = await request(endpoint, { headers: machine })
     assert.ok([401, 403, 404].includes(denied.status), 'machine keys cannot read real instruments, answers or contacts')
     await denied.body?.cancel()
