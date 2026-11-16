@@ -1,4 +1,5 @@
 import { TeamAccessStatus as TeamAccessStatus_c5c54908cb2d82de424dd64b0c8b9721 } from '../../../components/TeamAccessStatus'
+import { SurveyCorrectionNotice as SurveyCorrectionNotice_110ba348010aa359b2ac67409ab842ae } from '../../../components/SurveyCorrectionNotice'
 import { SurveyEditorGuide as SurveyEditorGuide_2aacd5fafa2ae644c1d30a4c94bd5664 } from '../../../components/SurveyEditorGuide'
 import { SurveyEditorIntroductionLabel as SurveyEditorIntroductionLabel_4835a27d1e0f4ef5259a32ec96fea2cf } from '../../../components/SurveyEditorRowLabels'
 import { RscEntryLexicalCell as RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
@@ -37,6 +38,7 @@ import { R2ClientUploadHandler as R2ClientUploadHandler_85cc02ed84006fcc91d3aff3
 /** @type import('payload').ImportMap */
 export const importMap = {
   "/components/TeamAccessStatus#TeamAccessStatus": TeamAccessStatus_c5c54908cb2d82de424dd64b0c8b9721,
+  "/components/SurveyCorrectionNotice#SurveyCorrectionNotice": SurveyCorrectionNotice_110ba348010aa359b2ac67409ab842ae,
   "/components/SurveyEditorGuide#SurveyEditorGuide": SurveyEditorGuide_2aacd5fafa2ae644c1d30a4c94bd5664,
   "/components/SurveyEditorRowLabels#SurveyEditorIntroductionLabel": SurveyEditorIntroductionLabel_4835a27d1e0f4ef5259a32ec96fea2cf,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalCell": RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e,

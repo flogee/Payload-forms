@@ -4,6 +4,7 @@ import type { Payload, TypedUser } from 'payload'
 import { loadSurveyReport, reportDataset } from '../src/survey/report-load'
 import { toStored } from '../src/survey/storage'
 import { demoDefinition } from '../src/survey/analysis-demo'
+import { digest } from '../src/survey/privacy-crypto'
 
 const user = { id: 1, collection: 'users', enabled: true, role: 'admin', _strategy: 'local-jwt' } as unknown as TypedUser
 const survey = { id: 8, title: 'Fictional survey', slug: 'fixture', phase: 'live', ...toStored(demoDefinition) }
@@ -52,4 +53,24 @@ test('empty and explicit test cohorts remain correctly labelled and dataset para
   assert.deepEqual(calls[1].where.and[1], { testOnly: { equals: true } })
   assert.equal(reportDataset('real'), 'real'); assert.equal(reportDataset('test'), 'test'); assert.equal(reportDataset(undefined), undefined)
   for (const value of ['mixed', '', ['real'], 1]) assert.throws(() => reportDataset(value), /auswählen/)
+})
+
+
+test('human report marks corrected labels only after committed history and keeps aggregate contracts unchanged', async () => {
+  const corrected = structuredClone(demoDefinition)
+  corrected.sections[0].questions[0].label = 'Corrected fictional question'
+  const signature = (definition: typeof demoDefinition) => digest({ version: definition.version, sections: definition.sections })
+  const calls: any[] = []
+  const payload = { find: async (args: any) => {
+    calls.push(args)
+    if (args.collection === 'surveys') return { docs: [{ ...survey, ...toStored(corrected) }] }
+    if (args.collection === 'survey-corrections') return { totalDocs: 1, docs: [{ survey: 8, status: 'committed', beforeHash: signature(demoDefinition), afterHash: signature(corrected) }] }
+    return { totalDocs: 2, docs: [demoDefinition, corrected].map((instrument, id) => ({ id, answers: {}, instrument, version: instrument.version, testOnly: false })) }
+  }, count: async () => ({ totalDocs: 2 }) } as unknown as Payload
+  const report = await loadSurveyReport(payload, 8, user)
+  assert.equal(report.usesCorrectedLabels, true)
+  assert.equal(report.sections[0].questions[0].label, 'Corrected fictional question')
+  assert.equal(report.aggregate.responses, 2)
+  assert.equal('usesCorrectedLabels' in report.aggregate, false)
+  assert.equal(calls.filter(call => call.collection === 'survey-corrections').length, 1)
 })

@@ -1,4 +1,3 @@
-import * as migration_20261103_180000_first_real_response_freeze from './20261103_180000_first_real_response_freeze';
 import * as migration_20261005_100813_initial_schema from './20261005_100813_initial_schema';
 import * as migration_20261005_101926_mcp_drafts from './20261005_101926_mcp_drafts';
 import * as migration_20261007_052947_privacy_controls from './20261007_052947_privacy_controls';
@@ -14,6 +13,8 @@ import * as migration_20261010_211058_public_participation from './20261010_2110
 import * as migration_20261018_155303_evaluation_runs from './20261018_155303_evaluation_runs';
 import * as migration_20261018_170000_qa_machine_owner from './20261018_170000_qa_machine_owner';
 import * as migration_20261019_100000_qa_machine_budgets from './20261019_100000_qa_machine_budgets';
+import * as migration_20261103_180000_first_real_response_freeze from './20261103_180000_first_real_response_freeze';
+import * as migration_20261116_081552_editorial_corrections from './20261116_081552_editorial_corrections';
 
 export const migrations = [
   {
@@ -84,12 +85,21 @@ export const migrations = [
   {
     up: migration_20261018_170000_qa_machine_owner.up,
     down: migration_20261018_170000_qa_machine_owner.down,
-    name: '20261018_170000_qa_machine_owner'
+    name: '20261018_170000_qa_machine_owner',
   },
   {
     up: migration_20261019_100000_qa_machine_budgets.up,
     down: migration_20261019_100000_qa_machine_budgets.down,
     name: '20261019_100000_qa_machine_budgets',
   },
-  { up: migration_20261103_180000_first_real_response_freeze.up, down: migration_20261103_180000_first_real_response_freeze.down, name: '20261103_180000_first_real_response_freeze' },
+  {
+    up: migration_20261103_180000_first_real_response_freeze.up,
+    down: migration_20261103_180000_first_real_response_freeze.down,
+    name: '20261103_180000_first_real_response_freeze',
+  },
+  {
+    up: migration_20261116_081552_editorial_corrections.up,
+    down: migration_20261116_081552_editorial_corrections.down,
+    name: '20261116_081552_editorial_corrections'
+  },
 ];

@@ -2,7 +2,7 @@ import type { Payload, TypedUser } from 'payload'
 import { isTeamUser } from '../auth/team'
 import { analyze, ANALYSIS_LIMIT } from './analysis'
 import { AnalysisError } from './analysis-load'
-import { digest } from './privacy-crypto'
+import { resolveAnalysisDefinition } from './analysis-definition'
 import { fromStored } from './storage'
 import { definitionSchema } from './validation'
 import { buildSurveyReport } from './report-build'
@@ -36,14 +36,13 @@ export async function loadSurveyReport(payload: Payload, surveyID: number, user:
     if (!parsed.success || parsed.data.version !== row.version) throw new AnalysisError('Eine gespeicherte Fragebogenfassung fehlt oder passt nicht zur Antwort. Bitte die betroffenen Einzelantworten prüfen.', 422)
     return parsed.data as Definition
   })
-  if (new Set(definitions.map(def => digest({ version: def.version, sections: def.sections }))).size > 1) {
-    throw new AnalysisError('Die Einsendungen stammen aus unterschiedlichen Fragebogenständen. Diese Fassungen müssen getrennt ausgewertet werden.', 422)
-  }
-  const definition = definitions[0] ?? fromStored(survey)
+  const { definition, corrected } = await resolveAnalysisDefinition(payload, surveyID, fromStored(survey), definitions, { user })
   const records: ReportRecord[] = rows.docs.map(row => ({ id: row.id, answers: row.answers as Answers,
     createdAt: row.createdAt, durationSeconds: row.durationSeconds, testOnly: row.testOnly }))
   const total = await payload.count({ collection: 'responses', user, overrideAccess: false, where: { survey: { equals: surveyID } } })
   const aggregate = analyze(definition, records, { id: survey.id, title: survey.title, slug: survey.slug, version: definition.version, phase: String(survey.phase) })
   aggregate.dataset = dataset
-  return buildSurveyReport({ definition, records, aggregate, dataset, excludedResponses: Math.max(0, total.totalDocs - rows.totalDocs) })
+  const report = buildSurveyReport({ definition, records, aggregate, dataset, excludedResponses: Math.max(0, total.totalDocs - rows.totalDocs) })
+  if (corrected) report.usesCorrectedLabels = true
+  return report
 }

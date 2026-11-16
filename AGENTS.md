@@ -9,10 +9,20 @@ Read README.md, INSTALL.md, and SECURITY.md before changing installation or auth
 - Keep real configuration, credentials, respondent data, uploads, database exports, and operational notes out of Git and public logs. Use reserved example domains and fictional fixtures in tests. Never commit .env files or wrangler.install.jsonc.
 - Local setup and Cloudflare configuration generation are offline. Creating remote resources, sending email, changing Access policies, applying remote migrations, or deploying requires the operator's explicit authorization. Never enable paid overage or raise limits automatically.
 - Keep public participation separate from authenticated administration, responses, exports, analysis, media management, and MCP. Preserve exact origins, signature validation, team-role checks, atomic budgets, bounded bodies/retries, and warning delivery status.
-- Fictional-data pretests remain the default. Real surveys require the explicit operator flag `FORMS_REAL_SURVEYS_ENABLED=1`, complete reviewed privacy settings and human-administrator activation. A version becomes immutable after its first real response; test responses do not freeze it, and deleting responses never unfreezes it. Preserve these gates; installation alone never enables real collection. QA/evaluation runs and machine clients remain fictional/pretest-only. Privacy documentation is not a legal compliance certification.
+- Fictional-data pretests remain the default. Real surveys require the explicit operator flag `FORMS_REAL_SURVEYS_ENABLED=1`, complete reviewed privacy settings and human-administrator activation. A version’s structure, identity and privacy become immutable after its first real response; only human-administrator editorial corrections with renewed confirmation, reason and committed before/after audit are allowed. Test responses do not freeze it, and deleting responses never unfreezes it. Preserve these gates; installation alone never enables real collection. QA/evaluation runs and machine clients remain fictional/pretest-only. Privacy documentation is not a legal compliance certification.
 - Never run integration tests against an existing installation. npm run test:ci creates disposable source/build/database trees and random test credentials. Keep production bindings out of test processes.
 - Prefer small changes and the existing stack. Run npm test and npm run typecheck for application changes, and npm run test:ci when installation, persistence, authentication, migrations or Worker behavior changes.
 - Additive migrations must preserve existing data and budget reservations. A code rollback does not restore a database; follow the backup and recovery notes in INSTALL.md.
 - AI assistance is welcome. Review generated code, disclose material limitations, and do not claim tests ran or a deployment succeeded without evidence.
 
 For Next.js APIs, consult the relevant guide shipped in node_modules/next/dist/docs before editing framework code.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

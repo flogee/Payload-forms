@@ -80,7 +80,7 @@ CSV `test_only` values and analysis `dataset` labels now reflect stored response
 
 The editing boundary is the first saved real response, not publication status. Pretests remain editable; their responses keep their original snapshots. The additive `20261103_180000_first_real_response_freeze` migration backfills existing real-response timestamps and makes future freezes permanent. Questionnaire edits acquire a conditional D1 edit token before Payload writes any child arrays; real inserts check that token atomically. Concurrent first responses prevent the edit before nested writes. Failed database replacements retain their token so a partial instrument cannot accept answers; verified recovery is described in INSTALL.md. Real-collection operator/privacy/human-administrator gates and machine access restrictions are unchanged. Browser requests send an additive instrument revision; evaluation-run requests continue to use their fixed snapshot.
 
-Pretest CSV exports preserve the union of snapshot-defined columns, include an `instrument_revision` digest, and include prior versions of the same survey. Each row is interpreted through its own snapshot. Aggregates use the retained snapshot when all answers share it; mixed question definitions return an explicit error instead of silently combining different instruments.
+Pretest CSV exports preserve the union of snapshot-defined columns, include an `instrument_revision` digest, and include prior versions of the same survey. Each row is interpreted through its own snapshot. Aggregates use the retained snapshot when all answers share it; mixed question definitions return an explicit error instead of silently combining different instruments, except for structurally identical definitions linked to the current stand by committed human editorial corrections.
 
 
 ## Five-step matrix presentation
@@ -113,10 +113,30 @@ identifying free text, even when separate contact records are absent.
 Question/row denominators, missing answers and visibility exclusions remain
 separate. Five-step matrices exclude unknown answers from the numeric
 distribution, and numeric summaries exclude unknown/not-applicable values.
-The report refuses mixed snapshot definitions and cohorts above the existing
+The report refuses mixed snapshot definitions without a committed editorial-correction chain, and cohorts above the existing
 1,000-response analysis limit rather than showing a partial result. Reopening
 or refreshing the report reads the current data; no background job is added.
 
 This is an additive human UI route without schema, migration, stored-answer,
 authentication or configuration changes. The adapted MIT ReUI primitives use
 the existing Recharts installation without new dependencies or remote assets.
+
+
+## Same-version editorial corrections
+
+A human administrator can explicitly attest unchanged meaning and record a reason
+for wording/presentation-only edits after freezing. The same survey/version/slug
+is retained. `definitionStructureHash` permits only enumerated presentation fields;
+unknown stored logic is rejected before schema normalization. Privacy, branching,
+answer values/order, scales and content layout remain fixed. Immutable uploads
+are replaced by reference. Pending/committed audit records contain both complete
+questionnaire stands and actor/reason, without participant data. Neither the
+collection API nor MCP may create, change or erase those records.
+
+The existing fail-closed edit token is retained through nested writes and audit
+commitment; operational saves acquire the same lock so closing cannot be lost.
+Before/after analysis hashes use the existing `digest({version, sections})`
+contract. Human reports/analysis follow committed edges, bounded at 1,000 records;
+pretest edits do not produce edges. Individual snapshots and aggregate/MCP output
+shapes remain unchanged. This release needs migration 17, an additive audit table
+and nullable Payload lock relationship; follow INSTALL.md for upgrade/recovery.

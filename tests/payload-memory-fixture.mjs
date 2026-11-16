@@ -8,6 +8,7 @@ const require=createRequire(`${root}/package.json`);
 const load=name=>import(pathToFileURL(require.resolve(name)).href);
 const {buildConfig,getPayload}=await load('payload');
 const {sqliteD1Adapter}=await load('@payloadcms/db-d1-sqlite');
+const {SurveyCorrections}=await import(pathToFileURL(`${root}/src/collections/SurveyCorrections.ts`).href);
 const {Surveys}=await import(pathToFileURL(`${root}/src/collections/Surveys.ts`).href);
 const {configureUsers}=await import(pathToFileURL(`${root}/src/collections/Users.ts`).href);
 const {guardSurveyEdits,preserveUnchangedSurveyArrays}=await import(pathToFileURL(`${root}/src/survey/persist-update.ts`).href);
@@ -36,11 +37,11 @@ const binding={prepare(sql) {
   async run(){events.push({sql,params:params.length,mode:'run'});const info=stmt.run(...params);return {results:[],success:true,meta:{last_row_id:Number(info.lastInsertRowid),rows_written:Number(info.changes)}}},
  });
  return {...bound([]),bind:(...params)=>bound(params)};
-},async batch(statements){batches++;return Promise.all(statements.map(s=>s.all()))}};
+},async batch(statements){batches++;native.exec('BEGIN');try{const results=[];for(const s of statements)results.push(await s.all());native.exec('COMMIT');return results}catch(error){native.exec('ROLLBACK');throw error}}};
 const database=sqliteD1Adapter({binding,push:false});
 const originalInit=database.init;
-database.init=args=>{const adapter=originalInit(args);adapter.client=binding;adapter.updateOne=guardSurveyEdits(preserveUnchangedSurveyArrays(adapter.updateOne));return adapter;};
-const config=await buildConfig({secret:randomBytes(32).toString('hex'),db:database,admin:{user:'users',disable:true},collections:[configureUsers(options.usersEnvironment || {}),options.surveyTransform ? options.surveyTransform(Surveys) : Surveys,{slug:'media',upload:{staticDir:'/private/tmp/payload-forms-test-unused-media'},fields:[{name:'title',type:'text'}]}],graphQL:{disable:true},typescript:{outputFile:'/private/tmp/payload-forms-test-unused-types.ts'}});
+database.init=args=>{const adapter=originalInit(args);adapter.client=binding;const update=adapter.updateOne;adapter.updateOne=guardSurveyEdits(preserveUnchangedSurveyArrays(options.beforeWrite ? async function(args){await options.beforeWrite(args);return update.call(this,args)} : update));return adapter;};
+const config=await buildConfig({secret:randomBytes(32).toString('hex'),db:database,admin:{user:'users',disable:true},collections:[configureUsers(options.usersEnvironment || {}),SurveyCorrections,options.surveyTransform ? options.surveyTransform(Surveys) : Surveys,{slug:'media',upload:{crop:false,focalPoint:false,staticDir:'/private/tmp/payload-forms-test-unused-media'},fields:[{name:'title',type:'text'}]}],graphQL:{disable:true},typescript:{outputFile:'/private/tmp/payload-forms-test-unused-types.ts'}});
 const payload=await getPayload({config,key:randomBytes(8).toString('hex')});
 return {payload,native,fixture,toStored,fromStored,user:{id:777,collection:'users',role:'admin',enabled:true}, reset(){events=[];batches=0}, get events(){return events}, get batches(){return batches}, async close(){await payload.destroy();native.close()}};
 }

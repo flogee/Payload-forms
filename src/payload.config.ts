@@ -11,6 +11,7 @@ import { z } from 'zod'
 import { configureUsers, staff } from './collections/Users'
 import { TeamAccessMonitor } from './collections/TeamAccessMonitor'
 import { Surveys } from './collections/Surveys'
+import { SurveyCorrections } from './collections/SurveyCorrections'
 import { Responses } from './collections/Responses'
 import { EvaluationRuns } from './collections/EvaluationRuns'
 import { ResponseContacts } from './collections/ResponseContacts'
@@ -76,7 +77,7 @@ export default buildConfig({
       logout: { Button: '/components/AccessLogout#AccessLogout' },
       beforeLogin: [{ path: '/components/AccessLoginHelp#AccessLoginHelp', serverProps: { enabled: cloudflare.env.ACCESS_LOGIN_ENABLED === '1' } }],
     } },
-  collections: [configureUsers(cloudflare.env), Surveys, EvaluationRuns, Responses, ResponseContacts, ResponseErasureLogs, ResponseNotifications, EmailUsage, Media, ImageStorageUsage, ImageRequestUsage, PublicRequestUsage, QAMachineUsage, BudgetAlerts, BudgetAlertMonitor, RetentionReminders, RetentionReminderMonitor, TeamAccessMonitor], editor: lexicalEditor(), graphQL: { disable: true },
+  collections: [configureUsers(cloudflare.env), Surveys, SurveyCorrections, EvaluationRuns, Responses, ResponseContacts, ResponseErasureLogs, ResponseNotifications, EmailUsage, Media, ImageStorageUsage, ImageRequestUsage, PublicRequestUsage, QAMachineUsage, BudgetAlerts, BudgetAlertMonitor, RetentionReminders, RetentionReminderMonitor, TeamAccessMonitor], editor: lexicalEditor(), graphQL: { disable: true },
   // Payload also sends entire questionnaire edits in the multipart _payload
   // field. Keep metadata bounded without rejecting the existing Sample definition.
   upload: { limits: { fileSize: IMAGE_LIMITS.fileBytes, files: 1, fields: 10, fieldSize: 1024 * 1024 }, abortOnLimit: true },

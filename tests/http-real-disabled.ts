@@ -24,7 +24,7 @@ assert.equal(submission.status, 403)
 await submission.body?.cancel()
 const responses = await fetch(`${base}/api/responses?where[survey][equals]=${survey.id}`, { headers: auth })
 const records = (await responses.json() as any).docs
-assert.equal(records.length, 2)
+assert.equal(records.length, 3, 'the two original responses and one post-correction response remain stored')
 assert.ok(records.every((response: any) => response.testOnly === false))
 const pretest = await fetch(`${base}/f/sample`)
 assert.equal(pretest.status, 200, 'runtime shutdown leaves fictional participation available')

@@ -42,6 +42,7 @@ export function SurveyReport({ data, surveys, demo = false }: { data: Report; su
         <div><dt>Erhebungsfassung</dt><dd>{report.survey.version}</dd></div>
         <div><dt>Berichtsstand</dt><dd>{reportStamp(report.generatedAt)}</dd></div>
       </dl><p>{totalQuestions} Fragen in {data.sections.length} Abschnitten · {data.excludedResponses} Einsendungen der anderen Datenbasis nicht einbezogen{data.medianDurationSeconds !== null && ` · gemeldete Bearbeitungsdauer (Median): ${responseDuration(data.medianDurationSeconds)}`}</p></section>
+      {data.usesCorrectedLabels && <p className="report-context">Dieser Bericht verwendet protokollierte Textkorrekturen. In den Einzelansichten und im CSV-Export bleiben die ursprünglichen Fragebogenstände erhalten.</p>}
       <p className="report-context">Gezählt werden einzelne Einsendungen, keine unabhängigen Organisationen. Eine Person kann ihre Organisation beschreiben; mehrere Personen können derselben Organisation angehören.</p>
       <p className="report-internal">Interner Bericht: kleine Fallzahlen und offene Antworten können Rückschlüsse auf Personen zulassen. Separat gespeicherte Kontaktangaben werden nicht einbezogen.</p>
       <div className="report-content"><aside className="report-navigation report-no-print"><nav aria-label="Berichtsabschnitte">{data.sections.map(section => <a key={section.id} href={`#section-${section.id}`}>{section.title}</a>)}</nav><a className="report-existing" href={`/auswertung?surveyID=${report.survey.id}`}>Zur bisherigen Diagrammauswertung</a></aside>
