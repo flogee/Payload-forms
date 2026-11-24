@@ -53,6 +53,14 @@ export function visible(q: Question, answers: Answers) {
   const answer = answers[q.showIf.field] as Choice | undefined
   return typeof answer?.choice === 'string' && q.showIf.values.includes(answer.choice)
 }
+export function visibleSectionIndexes(def: Definition, answers: Answers) {
+  return def.sections.flatMap((section, index) =>
+    section.description?.trim() || section.content?.length || section.questions.some(q => visible(q, answers))
+      ? [index]
+      : [],
+  )
+}
+
 export function questions(def: Definition) { return def.sections.flatMap(s => s.questions) }
 export function countSchema(q: Question) {
   return z.object({ status: z.enum(q.allowNA ? ['value', 'unknown', 'na'] : ['value', 'unknown']), value: z.number().int().min(q.min ?? 0).max(q.max ?? 100000000).optional(), note: z.string().max(500).optional() }).strict().superRefine((v, ctx) => {
