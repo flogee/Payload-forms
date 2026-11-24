@@ -1,8 +1,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import type { Definition } from '../src/survey/types'
 import { sample } from '../src/survey/sample'
 import { fromStored, toStored } from '../src/survey/storage'
-import { definitionSchema, validateAnswers, visible } from '../src/survey/validation'
+import { definitionSchema, validateAnswers, validateSectionAnswers, visible, visibleSectionIndexes } from '../src/survey/validation'
 import { aggregate } from '../src/survey/stats'
 import { safeBatches } from '../src/survey/d1-batches'
 import { csvCell, exportCSV } from '../src/survey/csv'
@@ -57,4 +58,30 @@ test('aggregation gives denominators and never includes raw text', () => {
   assert.equal(first.answered, 2)
   assert.equal(first.counts['Option 5'], 1)
   assert.equal(first.counts['Option 6'], 1)
+})
+
+test('section navigation follows the current filter and preserves standalone content', () => {
+  const definition: Definition = {
+    version: 'routing-test',
+    introduction: [],
+    sections: [
+      {
+        id: 'filter', title: 'Filter', questions: [{
+          id: 'choice', block: 'A', label: 'Select a route', kind: 'single',
+          options: ['once', 'often', 'never'].map(value => ({ value, label: value })),
+        }],
+      },
+      { id: 'yes', title: 'Yes', questions: [{ id: 'yesText', block: 'B', label: 'Yes answer', kind: 'text', showIf: { field: 'choice', values: ['once', 'often'] } }] },
+      { id: 'no', title: 'No', questions: [{ id: 'noText', block: 'C', label: 'No answer', kind: 'text', showIf: { field: 'choice', values: ['never'] } }] },
+      { id: 'end', title: 'End', description: 'Information for everyone', questions: [{ id: 'extra', block: 'D', label: 'Extra', kind: 'text', showIf: { field: 'choice', values: ['once'] } }] },
+    ],
+  }
+
+  assert.deepEqual(visibleSectionIndexes(definition, {}), [0, 3])
+  for (const choice of ['once', 'often']) {
+    assert.deepEqual(visibleSectionIndexes(definition, { choice: { choice } }), [0, 1, 3])
+  }
+  const changed = validateSectionAnswers(definition, { choice: { choice: 'never' }, yesText: 'Previously entered' }, 'filter')
+  assert.deepEqual(changed.answers, { choice: { choice: 'never' } })
+  assert.deepEqual(visibleSectionIndexes(definition, changed.answers), [0, 2, 3])
 })
