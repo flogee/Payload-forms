@@ -13,7 +13,9 @@ import { projectRoot } from './install-config.mjs'
 // Reviewed 2026-11-16: migration 17 adds only the correction table/indexes and
 // a nullable lock relation via fixed SQL; no prior table rebuild or data write.
 // Config only registers the new collection; CLI initialization remains unchanged.
+// Migration 18 adds one nullable text column. The index appends only this migration.
 const reviewedSources = {
+  "src/migrations/20261125_090000_thank_you_content.ts": "9cf4c54457f4a0735df659b7cb512c124fe59658c1eab452b9280d9690eff21b", // gitleaks:allow -- reviewed source SHA-256
   "src/migrations/20261116_081552_editorial_corrections.ts": "be7212c8489640d34ae28e3647559b5d03bbc1f5618ffb6bc0a0362c92109373", // gitleaks:allow -- reviewed source SHA-256
   "src/migrations/20261103_180000_first_real_response_freeze.ts": "77ee2e89c89cf0cb17fbc0b9f4c59d1c415e9ffd74dc08d70252ee646c9438c9", // gitleaks:allow -- reviewed source SHA-256
   "src/migrations/20261005_100813_initial_schema.ts": "2b60c02e2d320d1e26c6bbc58728455bf31b3b57dc843fa291b5eafea0700800", // gitleaks:allow -- reviewed source SHA-256
@@ -31,8 +33,8 @@ const reviewedSources = {
   "src/migrations/20261018_155303_evaluation_runs.ts": "0afc3b94eb00317bcf65e9457fb217ce77b02e7871b6df70dcb1af3162cc70b4", // gitleaks:allow -- reviewed source SHA-256
   "src/migrations/20261018_170000_qa_machine_owner.ts": "65dc1347a593e32092b8f5eaf8a1192385b819655a6c0ee6e4a134c6154b857c", // gitleaks:allow -- reviewed source SHA-256
   "src/migrations/20261019_100000_qa_machine_budgets.ts": "43f77cc714d81caa17f8147506ae27448eb11e9cceac097c18c319a9023169af", // gitleaks:allow -- reviewed source SHA-256
-  "src/migrations/index.ts": "b60284a13518985c5951a6f2979379ea012dee9aebcfdb1a9bb0f80255ff05e4", // gitleaks:allow -- reviewed source SHA-256
-  "src/payload.config.ts": "51cafb18620e6e5c674c559ea620f49f94765a07f4a372ea373e37878f3c3d31", // gitleaks:allow -- reviewed source SHA-256
+  "src/migrations/index.ts": "6e1e960ce794b5cea072339c6ea7ed3248e9a9b195b8aa1290cff75f0f2a877a", // gitleaks:allow -- reviewed source SHA-256
+  "src/payload.config.ts": "bb970d946acea3ba698eff9644c3fb2ec256acf99d3fe2ad79ba9e03c479dc28", // gitleaks:allow -- reviewed source SHA-256
   "node_modules/payload/dist/bin/migrate.js": "caa258402b1327a6f87c5716c4537b5422f2f2ab43d8f9538ab656bd6c87177e", // gitleaks:allow -- reviewed source SHA-256
 }
 

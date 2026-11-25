@@ -5,7 +5,7 @@ import { editorialState, type EditorialCorrection } from './editorial-correction
 
 const instrumentArrays = ['introduction', 'introContent', 'sections'] as const
 // Server-only snapshots from the validated collection hook, scoped to request + ID.
-export const instrumentFields = ['title', 'slug', 'version', 'introduction', 'introContent', 'sections', 'privacy'] as const
+export const instrumentFields = ['title', 'slug', 'version', 'introduction', 'introContent', 'sections', 'privacy', 'thankYouContent'] as const
 type Snapshot = { arrays: string[]; instrument: string[]; phase: unknown; updatedAt: unknown; firstRealResponseAt: unknown; correction?: EditorialCorrection; approved?: Record<string, unknown>; approvedState?: string }
 const originals = new WeakMap<Partial<PayloadRequest>, Map<string, Snapshot>>()
 
@@ -53,7 +53,8 @@ export function guardSurveyEdits(update: BaseDatabaseAdapter['updateOne']): Base
     delete data.instrumentEditToken
     delete data.editorialCorrection
     delete data.correctionReason
-    const changed = instrumentFields.some((field, index) => data[field] !== undefined && canonicalJSON(data[field]) !== original.instrument[index])
+    const changedInstrument = instrumentFields.some((field, index) => data[field] !== undefined && canonicalJSON(data[field]) !== original.instrument[index])
+    const changed = changedInstrument
       || (data.phase !== undefined && data.phase !== original.phase && data.phase !== 'closed')
     if (!changed) {
       // Only scalar operational saves may omit unchanged protected fields.
@@ -82,12 +83,12 @@ export function guardSurveyEdits(update: BaseDatabaseAdapter['updateOne']): Base
     if (correction && (!approved || (data.phase !== undefined && data.phase !== original.phase && data.phase !== 'closed'))) {
       throw new APIError('Die Korrektur wurde nach der Prüfung verändert. Bitte erneut laden und prüfen.', 409)
     }
-    if (original.firstRealResponseAt && !correction) throw new APIError('Diese Fassung ist eingefroren. Bitte den Korrekturmodus verwenden.', 409)
+    if ((original.firstRealResponseAt || (original.phase === 'live' && changedInstrument)) && !correction) throw new APIError('Diese Fassung ist eingefroren. Bitte den Korrekturmodus verwenden.', 409)
     const now = new Date().toISOString()
     const locked = await runBatch(db, [{
       sql: `UPDATE surveys SET instrument_edit_token = ? WHERE id = ? AND updated_at = ?
-        AND ${correction ? 'first_real_response_at = ?' : 'first_real_response_at IS NULL'} AND instrument_edit_token IS NULL RETURNING id`,
-      values: [token, Number(args.id), String(original.updatedAt), ...(correction ? [String(original.firstRealResponseAt)] : [])],
+        AND ${original.firstRealResponseAt ? 'first_real_response_at = ?' : 'first_real_response_at IS NULL'} AND instrument_edit_token IS NULL RETURNING id`,
+      values: [token, Number(args.id), String(original.updatedAt), ...(original.firstRealResponseAt ? [String(original.firstRealResponseAt)] : [])],
     }, ...(correction ? [{
       sql: `INSERT INTO survey_corrections (survey_id, corrected_by_id, reason, status, "before", "after", before_hash, after_hash, edit_token, created_at, updated_at)
         SELECT id, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ? FROM surveys WHERE id = ? AND instrument_edit_token = ? RETURNING id`,

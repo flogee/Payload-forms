@@ -160,3 +160,15 @@ test('Download- und Kopiepfade verwenden genau die ausgewählte gespeicherte For
   assert.deepEqual(surveyToolsURLs(42), { json: '/api/survey/definition/42?format=json', markdown: '/api/survey/definition/42?format=markdown',
     csv: '/api/survey/export?surveyID=42', duplicate: '/api/survey/duplicate/42' })
 })
+
+test('optional confirmation copy survives export and duplication; older clients may omit it', () => {
+  const stored = { ...source(), thankYouContent: testText('Thanks for taking part') }
+  const definition = fromStored(stored)
+  assert.ok(definition.thankYouContent)
+  assert.deepEqual(questionnaireExport(stored).definition.thankYouContent, definition.thankYouContent)
+  assert.match(questionnaireMarkdown(stored), /Thanks for taking part/)
+  assert.deepEqual(duplicateDraftData(stored, requestID).thankYouContent, definition.thankYouContent)
+  assert.equal(Object.hasOwn(toStored(sample), 'thankYouContent'), false)
+  assert.equal(toStored({ ...sample, thankYouContent: null }).thankYouContent, null)
+  assert.equal(fromStored({ ...stored, thankYouContent: { root: { type: 'root', children: [] } } }).thankYouContent, undefined)
+})
