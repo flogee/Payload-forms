@@ -4,7 +4,7 @@ export type Question = {
   id: string; block: string; label: string; kind: 'text' | 'textarea' | 'single' | 'multiple' | 'count' | 'matrix' | 'counts' | 'committees' | 'slider' | 'stars' | 'smiley' | 'ranking';
   help?: string; options?: Option[]; rows?: Row[]; allowNA?: boolean; min?: number; max?: number;
   step?: number; lowLabel?: string; highLabel?: string;
-  showIf?: { field: string; values: string[] }; optional?: boolean
+  showIf?: { field: string; values: string[] }; optional?: boolean; required?: boolean
 }
 import type { ContentBlock, RichTextContent } from './content'
 export type Section = { id: string; title: string; description?: string; questions: Question[]; content?: ContentBlock[] }

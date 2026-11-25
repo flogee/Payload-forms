@@ -78,7 +78,7 @@ export function questionnaireMarkdown(source: Record<string, any>): string {
     lines.push(`## ${plain(section.title)} (${plain(section.id)})`, '', ...(section.description ? [plain(section.description), ''] : []))
     lines.push(...contentLines(section.content?.filter(block => !block.afterQuestion)))
     for (const question of section.questions) {
-      lines.push(`### ${plain(question.id)} · ${plain(question.label)}`, '', `Frageblock: ${plain(question.block)} · Antwortformat: ${formatLabels[question.kind]} · Optional: ${question.optional ? 'ja' : 'nein'}`, '')
+      lines.push(`### ${plain(question.id)} · ${plain(question.label)}`, '', `Frageblock: ${plain(question.block)} · Antwortformat: ${formatLabels[question.kind]} · Optional: ${question.required ? 'nein · Antwort erforderlich' : question.optional ? 'ja' : 'nein'}`, '')
       if (question.help) lines.push(plain(question.help), '')
       if (question.kind === 'slider') lines.push(`Slider: ${question.min ?? 0}–${question.max ?? 10}; Schrittweite ${question.step ?? 1}.`, '')
       if (question.kind === 'stars' || question.kind === 'smiley') lines.push('Bewertung: 1–5.', '')

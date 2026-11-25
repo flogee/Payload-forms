@@ -287,6 +287,10 @@ export interface Survey {
             | 'ranking';
           help?: string | null;
           optional?: boolean | null;
+          /**
+           * Teilnehmende müssen diese Frage beantworten, wenn sie eingeblendet ist.
+           */
+          required?: boolean | null;
           options?:
             | {
                 value: string;
@@ -1113,6 +1117,7 @@ export interface SurveysSelect<T extends boolean = true> {
               kind?: T;
               help?: T;
               optional?: T;
+              required?: T;
               options?:
                 | T
                 | {

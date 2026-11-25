@@ -15,10 +15,11 @@ function content(blocks: ContentBlock[] = []) {
   })
 }
 function question(q: Question) {
-  known(q, ['id', 'block', 'label', 'kind', 'help', 'options', 'rows', 'allowNA', 'min', 'max', 'step', 'lowLabel', 'highLabel', 'showIf', 'optional'])
+  known(q, ['id', 'block', 'label', 'kind', 'help', 'options', 'rows', 'allowNA', 'min', 'max', 'step', 'lowLabel', 'highLabel', 'showIf', 'optional', 'required'])
   if (q.showIf) known(q.showIf, ['field', 'values'])
   return { id: q.id, block: q.block, kind: q.kind, optional: q.optional ?? false, allowNA: q.allowNA ?? false,
     min: q.min, max: q.max, step: q.step, showIf: q.showIf,
+    ...(q.required ? { required: true } : {}),
     options: (q.options ?? []).map(option => {
       known(option, ['value', 'label', 'exclusive'])
       return { value: option.value, exclusive: option.exclusive ?? false }

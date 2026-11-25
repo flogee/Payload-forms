@@ -16,7 +16,9 @@ import { projectRoot } from './install-config.mjs'
 // Migration 18 adds one nullable text column. The index appends only this migration.
 // Migration 19 adds one optional boolean column with default false.
 // Migration 20 adds one nullable text column with the German default.
+// Migration 21 adds one nullable boolean column.
 const reviewedSources = {
+  "src/migrations/20261125_230000_required_survey_questions.ts": "8a85e3b30a064c249ee461402c7d54834b24cf4852f9b2a98a61075081612563", // gitleaks:allow -- reviewed source SHA-256
   "src/migrations/20261125_170000_participant_language.ts": "8a948cd7c780a8d35dbf18ef1dbe08c2b33f36bf81569de3a02a9c776b2d9878", // gitleaks:allow -- reviewed source SHA-256
   "src/migrations/20261125_120000_hide_participant_question_codes.ts": "8ea4ee090d92e94bed38b595602cdcce84550e1dc1feedef8fd215852d510aa6", // gitleaks:allow -- reviewed source SHA-256
   "src/migrations/20261125_090000_thank_you_content.ts": "9cf4c54457f4a0735df659b7cb512c124fe59658c1eab452b9280d9690eff21b", // gitleaks:allow -- reviewed source SHA-256
@@ -37,7 +39,7 @@ const reviewedSources = {
   "src/migrations/20261018_155303_evaluation_runs.ts": "0afc3b94eb00317bcf65e9457fb217ce77b02e7871b6df70dcb1af3162cc70b4", // gitleaks:allow -- reviewed source SHA-256
   "src/migrations/20261018_170000_qa_machine_owner.ts": "65dc1347a593e32092b8f5eaf8a1192385b819655a6c0ee6e4a134c6154b857c", // gitleaks:allow -- reviewed source SHA-256
   "src/migrations/20261019_100000_qa_machine_budgets.ts": "43f77cc714d81caa17f8147506ae27448eb11e9cceac097c18c319a9023169af", // gitleaks:allow -- reviewed source SHA-256
-  "src/migrations/index.ts": "0b2a0a3f60d8647ac752ac30e37eb9248c60d790b4159155d104d1bab0c83a83", // gitleaks:allow -- reviewed source SHA-256
+  "src/migrations/index.ts": "2a7736361f611ba1b056ae142ff1d09e3742ea6075cee080639e7465c0b03574", // gitleaks:allow -- reviewed source SHA-256
   "src/payload.config.ts": "bb970d946acea3ba698eff9644c3fb2ec256acf99d3fe2ad79ba9e03c479dc28", // gitleaks:allow -- reviewed source SHA-256
   "node_modules/payload/dist/bin/migrate.js": "caa258402b1327a6f87c5716c4537b5422f2f2ab43d8f9538ab656bd6c87177e", // gitleaks:allow -- reviewed source SHA-256
 }

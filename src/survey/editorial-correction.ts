@@ -24,7 +24,7 @@ function checkStored(doc: Document) {
   doc.sections?.forEach((s: Document) => {
     known(s, ['key', 'title', 'description', 'questions', 'content']); blocks(s.content ?? [])
     s.questions?.forEach((q: Document) => {
-      known(q, ['code', 'block', 'label', 'kind', 'help', 'options', 'rows', 'allowNA', 'min', 'max', 'step', 'lowLabel', 'highLabel', 'showIf', 'optional'])
+      known(q, ['code', 'block', 'label', 'kind', 'help', 'options', 'rows', 'allowNA', 'min', 'max', 'step', 'lowLabel', 'highLabel', 'showIf', 'optional', 'required'])
       q.options?.forEach((o: Document) => known(o, ['value', 'label', 'exclusive']))
       q.rows?.forEach((r: Document) => known(r, ['key', 'label']))
       if (q.showIf) known(q.showIf, ['field', 'values'])
