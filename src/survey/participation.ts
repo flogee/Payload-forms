@@ -1,4 +1,20 @@
 import { privacyMissing, readPrivacySettings } from './privacy'
+import type { Definition } from './types'
+
+export function participantDefinition(definition: Definition): Definition {
+  return {
+    ...definition,
+    sections: definition.sections.map(section => ({
+      ...section,
+      questions: section.questions.map(question => {
+        const prefix = /^([a-z][a-z0-9_-]*)[.)]\s+(?=\S)/i.exec(question.label)
+        return prefix && prefix[1].toLowerCase() === question.id.toLowerCase()
+          ? { ...question, label: question.label.slice(prefix[0].length) }
+          : question
+      }),
+    })),
+  }
+}
 
 export type SubmissionMode = 'pretest' | 'live'
 

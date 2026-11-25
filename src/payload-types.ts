@@ -444,6 +444,10 @@ export interface Survey {
    * Bestimmt die Teilnahmelink-Adresse, z. B. seminarfeedback-2026. Ab der ersten echten Antwort bleibt sie unveränderlich.
    */
   slug: string;
+  /**
+   * Blendet Blockkürzel und vorangestellte Fragekennungen wie A1. aus.
+   */
+  hideQuestionCodes?: boolean | null;
   notifications?: {
     enabled?: boolean | null;
     /**
@@ -852,7 +856,7 @@ export interface PayloadMcpApiKey {
      */
     createSurveyDraft?: boolean | null;
     /**
-     * Aktualisiert die angegebene surveyID im Status draft oder pretest mit der vollständigen Definition. Für denselben Teilnahmelink den vorhandenen Pretest und dessen slug und version beibehalten. Ein separater Entwurf aktualisiert den Pretest nicht. Testantworten sperren die Fassung nicht. Nach der ersten echten Antwort sowie im Status live oder closed ist dieses Werkzeug gesperrt. Ändert keinen Status. Optionaler formatierter Dankestext: definition.thankYouContent; weglassen zum Beibehalten, null zum Leeren.
+     * Aktualisiert die angegebene surveyID im Status draft oder pretest mit der vollständigen Definition. Für denselben Teilnahmelink den vorhandenen Pretest und dessen slug und version beibehalten. Ein separater Entwurf aktualisiert den Pretest nicht. Testantworten sperren die Fassung nicht. Nach der ersten echten Antwort sowie im Status live oder closed ist dieses Werkzeug gesperrt. Ändert keinen Status. Optionaler formatierter Dankestext: definition.thankYouContent; weglassen zum Beibehalten, null zum Leeren. Optional: hideQuestionCodes blendet Fragekürzel für Teilnehmende aus. Ohne Angabe wird die Einstellung beibehalten.
      */
     updateSurveyDraft?: boolean | null;
     /**
@@ -1185,6 +1189,7 @@ export interface SurveysSelect<T extends boolean = true> {
         logo?: T;
       };
   slug?: T;
+  hideQuestionCodes?: T;
   notifications?:
     | T
     | {

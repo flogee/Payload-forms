@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { participationMode } from '@/survey/participation'
+import { participantDefinition, participationMode } from '@/survey/participation'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { fromStored } from '@/survey/storage'
@@ -40,5 +40,6 @@ export default async function ParticipationPage({ params, searchParams }: {
     definition = JSON.parse(run.instrument) as Definition
   }
   const privacy = privacyNotice(readPrivacySettings(survey.privacy))
-  return <Survey testOnly={mode === 'pretest'} definition={definition} instrumentRevision={digest(definition)} evaluationRun={evaluationRun} branding={readBranding(survey.branding)} surveyID={survey.id} title={survey.title} homeURL={`/f/${survey.slug}`} privacy={privacy} privacyHash={privacy && privacyHash(privacy)} />
+  const hideQuestionCodes = survey.hideQuestionCodes === true
+  return <Survey testOnly={mode === 'pretest'} definition={hideQuestionCodes ? participantDefinition(definition) : definition} hideQuestionCodes={hideQuestionCodes} instrumentRevision={digest(definition)} evaluationRun={evaluationRun} branding={readBranding(survey.branding)} surveyID={survey.id} title={survey.title} homeURL={`/f/${survey.slug}`} privacy={privacy} privacyHash={privacy && privacyHash(privacy)} />
 }

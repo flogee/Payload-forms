@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { Surveys } from '../src/collections/Surveys'
-import { participationMode, realSurveysEnabled } from '../src/survey/participation'
+import { participantDefinition, participationMode, realSurveysEnabled } from '../src/survey/participation'
 import { participantContact } from '../src/survey/privacy'
 import { toStored } from '../src/survey/storage'
 import { sample } from '../src/survey/sample'
@@ -62,4 +62,20 @@ test('CSV preserves actual response test markers while legacy callers remain tes
   const csv = exportCSV(sample, [{ id: 1, version: sample.version, createdAt: '', testOnly: false, answers: {} }, { id: 2, version: sample.version, createdAt: '', answers: {} }])
   assert.match(csv.split('\r\n')[1], /"false"/)
   assert.match(csv.split('\r\n')[2], /"true"/)
+})
+
+test('participant labels omit their own code while preserving the saved instrument and routing', () => {
+  const definition = {
+    ...sample,
+    sections: [{ id: 'a', title: 'Example', questions: [
+      { id: 'a1', block: 'A', label: 'A1. Example question?', kind: 'single' as const, options: [{ value: 'yes', label: 'Yes' }] },
+      { id: 'e10', block: 'E', label: 'E10) Another question?', kind: 'text' as const, showIf: { field: 'a1', values: ['yes'] } },
+      { id: 'e11', block: 'E', label: 'A1. What does this label mean?', kind: 'text' as const },
+    ] }],
+  }
+  const [first, conditional, unrelated] = participantDefinition(definition).sections[0].questions
+  assert.deepEqual(first, { ...definition.sections[0].questions[0], label: 'Example question?' })
+  assert.deepEqual(conditional, { ...definition.sections[0].questions[1], label: 'Another question?' })
+  assert.equal(unrelated.label, 'A1. What does this label mean?')
+  assert.equal(definition.sections[0].questions[0].label, 'A1. Example question?')
 })
