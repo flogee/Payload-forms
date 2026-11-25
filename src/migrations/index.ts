@@ -20,6 +20,8 @@ import * as migration_20261125_090000_thank_you_content from './20261125_090000_
 
 import * as migration_20261125_120000_hide_participant_question_codes from './20261125_120000_hide_participant_question_codes';
 
+import * as migration_20261125_170000_participant_language from './20261125_170000_participant_language';
+
 export const migrations = [
   {
     up: migration_20261005_100813_initial_schema.up,
@@ -108,4 +110,5 @@ export const migrations = [
   },
   { up: migration_20261125_090000_thank_you_content.up, down: migration_20261125_090000_thank_you_content.down, name: '20261125_090000_thank_you_content' },
   { up: migration_20261125_120000_hide_participant_question_codes.up, down: migration_20261125_120000_hide_participant_question_codes.down, name: '20261125_120000_hide_participant_question_codes' },
+  { up: migration_20261125_170000_participant_language.up, down: migration_20261125_170000_participant_language.down, name: '20261125_170000_participant_language' },
 ];

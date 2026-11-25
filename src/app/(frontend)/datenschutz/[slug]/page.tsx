@@ -1,3 +1,4 @@
+import { participantText, readParticipantLanguage } from '@/survey/participant-language'
 import { participationMode } from '@/survey/participation'
 import { isTeamUser } from '@/auth/team'
 import { headers } from 'next/headers'
@@ -23,8 +24,10 @@ export default async function PrivacyPage({ params }: { params: Promise<{ slug: 
   if (!survey || (!humanTeam && !participationMode(survey))) notFound()
   const notice = privacyNotice(readPrivacySettings(survey.privacy))
   if (!notice) notFound()
-  return <div className="shell"><header className="topbar"><a className="wordmark" href="/admin">Payload Forms<span>Datenschutz und Teilnahme</span></a><span className="test-tag">{survey.phase === 'live' ? 'Erhebung' : survey.phase === 'closed' ? 'Geschlossene Fassung' : 'Vorschau · Pretest'}</span></header>
-    <main className="unavailable"><h1>{survey.title}</h1><PrivacyNotice notice={notice} draft={survey.phase === 'draft' || survey.phase === 'pretest'} />
-      <p><a href={participationMode(survey) ? `/f/${survey.slug}` : `/admin/collections/surveys/${survey.id}`}>Zurück zum Fragebogen</a></p>
+  const language = readParticipantLanguage(survey.participantLanguage)
+  const t = participantText(language)
+  return <div className="shell" lang={language}><header className="topbar"><a className="wordmark" href="/admin">Payload Forms<span>{t('Datenschutz und Teilnahme')}</span></a><span className="test-tag">{survey.phase === 'live' ? t('Erhebung') : survey.phase === 'closed' ? t('Geschlossene Fassung') : t('Vorschau · Pretest')}</span></header>
+    <main className="unavailable"><h1>{survey.title}</h1><PrivacyNotice language={language} notice={notice} draft={survey.phase === 'draft' || survey.phase === 'pretest'} />
+      <p><a href={participationMode(survey) ? `/f/${survey.slug}` : `/admin/collections/surveys/${survey.id}`}>{t('Zurück zum Fragebogen')}</a></p>
     </main></div>
 }

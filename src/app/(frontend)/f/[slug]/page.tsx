@@ -1,3 +1,5 @@
+import { cache } from 'react'
+import { participantText, readParticipantLanguage } from '@/survey/participant-language'
 import { notFound } from 'next/navigation'
 import { participantDefinition, participationMode } from '@/survey/participation'
 import { getPayload } from 'payload'
@@ -13,19 +15,28 @@ import { responseDatabase } from '@/survey/response-store'
 import type { Definition } from '@/survey/types'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Fragebogen · Payload Forms', description: 'Fragebogen und Teilnahme', referrer: 'no-referrer' }
+const findParticipatingSurvey = cache(async (slug: string) => {
+  if (!validSurveySlug(slug)) return undefined
+  const payload = await getPayload({ config })
+  // Only explicitly opened, operator-enabled forms are exposed.
+  const result = await payload.find({ collection: 'surveys', where: { slug: { equals: slug }, phase: { in: ['pretest', 'live'] } }, limit: 1, depth: 0 })
+  const survey = result.docs[0]
+  const mode = survey && participationMode(survey)
+  return mode && survey ? { survey, mode, payload } : undefined
+})
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const source = await findParticipatingSurvey((await params).slug)
+  const t = participantText(readParticipantLanguage(source?.survey.participantLanguage))
+  return { title: `${t('Fragebogen')} · Payload Forms`, description: t('Fragebogen und Teilnahme'), referrer: 'no-referrer' as const }
+}
 
 export default async function ParticipationPage({ params, searchParams }: {
   params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const { slug } = await params
-  if (!validSurveySlug(slug)) notFound()
-  const payload = await getPayload({ config })
-  // Only explicitly opened, operator-enabled forms are exposed.
-  const found = await payload.find({ collection: 'surveys', where: { slug: { equals: slug }, phase: { in: ['pretest', 'live'] } }, limit: 1, depth: 0 })
-  const survey = found.docs[0]
-  const mode = survey && participationMode(survey)
-  if (!survey || !mode) notFound()
+  const source = await findParticipatingSurvey((await params).slug)
+  if (!source) notFound()
+  const { survey, mode, payload } = source
   const query = await searchParams
   let evaluationRun: { key: string; token: string } | undefined, definition = fromStored(survey)
   if (query.run !== undefined || query.access !== undefined) {
@@ -41,5 +52,5 @@ export default async function ParticipationPage({ params, searchParams }: {
   }
   const privacy = privacyNotice(readPrivacySettings(survey.privacy))
   const hideQuestionCodes = survey.hideQuestionCodes === true
-  return <Survey testOnly={mode === 'pretest'} definition={hideQuestionCodes ? participantDefinition(definition) : definition} hideQuestionCodes={hideQuestionCodes} instrumentRevision={digest(definition)} evaluationRun={evaluationRun} branding={readBranding(survey.branding)} surveyID={survey.id} title={survey.title} homeURL={`/f/${survey.slug}`} privacy={privacy} privacyHash={privacy && privacyHash(privacy)} />
+  return <Survey language={readParticipantLanguage(survey.participantLanguage)} testOnly={mode === 'pretest'} definition={hideQuestionCodes ? participantDefinition(definition) : definition} hideQuestionCodes={hideQuestionCodes} instrumentRevision={digest(definition)} evaluationRun={evaluationRun} branding={readBranding(survey.branding)} surveyID={survey.id} title={survey.title} homeURL={`/f/${survey.slug}`} privacy={privacy} privacyHash={privacy && privacyHash(privacy)} />
 }

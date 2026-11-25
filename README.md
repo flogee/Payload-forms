@@ -11,7 +11,10 @@ Match the participation URL `/f/<slug>` to its survey ID, version and phase usin
 `updateSurveyDraft` replaces the full definition of that ID in either draft or
 pretest phase. Set the optional `hideQuestionCodes` argument to control whether
 participants see question codes. The editor exposes the same setting under
-**Veröffentlichen**. The setting affects presentation only. Keep the existing pretest ID, slug and version to update the same
+**Veröffentlichen**. The setting affects presentation only. The optional
+`participantLanguage` setting selects German (`de`, default) or English
+(`en`) for participant controls and standard UI messages. It does not alter
+the language of the questionnaire text or privacy copy supplied by editors. Keep the existing pretest ID, slug and version to update the same
 participation link. Updating a separate draft changes only that draft. Test
 responses do not freeze a pretest. The tool cannot activate a survey, update
 live or closed surveys, or edit a survey after its first real response.

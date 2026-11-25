@@ -1,3 +1,5 @@
+import { participantText, type ParticipantLanguage } from './participant-language'
+
 // Share only the public participation path, never a response or evaluation grant.
 export function participantShareURL(origin: string, homeURL: string): string | undefined {
   try {
@@ -9,6 +11,7 @@ export function participantShareURL(origin: string, homeURL: string): string | u
   } catch { return undefined }
 }
 
-export function participantInvitation(title: string, url: string): string {
-  return `Ich habe an der Befragung „${title}“ teilgenommen. Vielleicht ist sie auch für dich oder deine Organisation interessant:\n\n${url}`
+export function participantInvitation(title: string, url: string, language: ParticipantLanguage = 'de'): string {
+  const t = participantText(language)
+  return `${t("Ich habe an der Befragung „{0}“ teilgenommen. Vielleicht ist sie auch für dich oder deine Organisation interessant:", title)}\n\n${url}`
 }

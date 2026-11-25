@@ -1,17 +1,20 @@
 'use client'
+import { participantText, type ParticipantLanguage } from '@/survey/participant-language'
 import { useId, useRef, type CSSProperties } from 'react'
 import type { Answer, Question } from '@/survey/types'
 import './MatrixField.css'
 import { matrixSliderOptions } from '@/survey/matrix'
 import { MatrixSliderField } from './MatrixSliderField'
 
-export function MatrixField({ q, value, onChange, invalid, describedBy }: {
+export function MatrixField({ q, value, onChange, invalid, describedBy, language = 'de' }: {
+  language?: ParticipantLanguage
   q: Question
   value?: Answer
   onChange: (value: Answer | undefined) => void
   invalid?: boolean
   describedBy?: string
 }) {
+  const t = participantText(language)
   const namespace = useId()
   const firstChoices = useRef<(HTMLInputElement | null)[]>([])
   const answers = value as Record<string, string> | undefined
@@ -25,24 +28,24 @@ export function MatrixField({ q, value, onChange, invalid, describedBy }: {
   }
 
   const sliderOptions = matrixSliderOptions(q)
-  if (sliderOptions) return <MatrixSliderField q={q} {...sliderOptions} value={value} onChange={onChange} invalid={invalid} describedBy={describedBy} />
+  if (sliderOptions) return <MatrixSliderField language={language} q={q} {...sliderOptions} value={value} onChange={onChange} invalid={invalid} describedBy={describedBy} />
 
   return <div className="matrix-field" style={{ '--matrix-options': options.length } as CSSProperties}>
-    <p className="matrix-field__hint" id={`${namespace}-hint`}>Je Zeile eine Auswahl. Du kannst Zeilen offenlassen.</p>
-    <div className="matrix-field__scroll" role="region" aria-label={`${q.label}: Bewertungstabelle`} tabIndex={0}>
+    <p className="matrix-field__hint" id={`${namespace}-hint`}>{t("Je Zeile eine Auswahl. Du kannst Zeilen offenlassen.")}</p>
+    <div className="matrix-field__scroll" role="region" aria-label={`${q.label}: ${t("Bewertungstabelle")}`} tabIndex={0}>
       <table className="matrix-field__table" role="table">
         <caption className="matrix-field__sr-only">{q.label}</caption>
         <thead role="rowgroup"><tr role="row">
-          <th scope="col" role="columnheader">Aussage</th>
+          <th scope="col" role="columnheader">{t("Aussage")}</th>
           {options.map((option, index) => <th key={option.value} scope="col" role="columnheader" id={`${namespace}-option-${index}`}>{option.label}</th>)}
         </tr></thead>
         <tbody role="rowgroup">{q.rows?.map((row, rowIndex) => <tr key={row.key} role="row">
           <th scope="row" role="rowheader">
             <span id={`${namespace}-row-${rowIndex}`}>{row.label}</span>
-            <button type="button" className="clear matrix-field__reset" disabled={answers?.[row.key] === undefined} aria-label={`${row.label}: Auswahl zurücksetzen`} onClick={() => {
+            <button type="button" className="clear matrix-field__reset" disabled={answers?.[row.key] === undefined} aria-label={`${row.label}: ${t("Auswahl zurücksetzen")}`} onClick={() => {
               update(row.key)
               firstChoices.current[rowIndex]?.focus()
-            }}>Zurücksetzen</button>
+            }}>{t("Zurücksetzen")}</button>
           </th>
           {options.map((option, optionIndex) => <td key={option.value} role="cell">
             <label className="matrix-field__choice">

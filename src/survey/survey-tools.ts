@@ -6,6 +6,7 @@ import { readPrivacySettings, type PrivacySettings } from './privacy'
 import type { ContentBlock, RichTextNode } from './content'
 import { surveyOriginStatus } from './origins'
 import { readBranding } from './branding'
+import { readParticipantLanguage } from './participant-language'
 
 export const surveyToolIDSchema = z.string().regex(/^[1-9]\d{0,9}$/).transform(Number)
   .refine(id => Number.isSafeInteger(id) && id <= 2147483647)
@@ -108,6 +109,7 @@ export function duplicateDraftData(source: Record<string, any>, requestID: strin
     title: `${source.title} · Kopie`, slug: identity, phase: 'draft' as const,
     ...toStored({ ...fromStored(source), version: identity }),
     branding: readBranding(source.branding),
+    participantLanguage: readParticipantLanguage(source.participantLanguage),
     hideQuestionCodes: source.hideQuestionCodes === true,
     privacy: { ...readPrivacySettings(source.privacy), reviewed: false },
     notifications: { enabled: false, recipients: '' }, retentionReminders: { enabled: false },

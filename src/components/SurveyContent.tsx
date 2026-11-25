@@ -1,4 +1,5 @@
 'use client'
+import { participantText, type ParticipantLanguage } from '@/survey/participant-language'
 
 import { Fragment, useState, type ReactNode } from 'react'
 import type { ContentBlock, RichTextNode } from '@/survey/content'
@@ -37,18 +38,19 @@ function renderNode(node: RichTextNode, key: number): ReactNode {
   }
 }
 
-function ContentImage({ block, homeURL }: { block: Extract<ContentBlock, { blockType: 'image' }>; homeURL: string }) {
+function ContentImage({ block, homeURL, language }: { language: ParticipantLanguage; block: Extract<ContentBlock, { blockType: 'image' }>; homeURL: string }) {
+  const t = participantText(language)
   const [failed, setFailed] = useState(false)
   const validSource = /^\/f\/[a-z][a-z0-9-]{0,79}$/.test(homeURL) && Number.isSafeInteger(block.image) && block.image > 0
   return <figure className="survey-content survey-content--image">
-    {failed || !validSource ? <p className="survey-content__image-fallback" role="status">Bild konnte nicht geladen werden: {block.alt}</p>
+    {failed || !validSource ? <p className="survey-content__image-fallback" role="status">{t("Bild konnte nicht geladen werden")}: {block.alt}</p>
       : <img src={`${homeURL}/images/${block.image}`} alt={block.alt} loading="lazy" decoding="async" onError={() => setFailed(true)} />}
     {block.caption && <figcaption>{block.caption}</figcaption>}
   </figure>
 }
 
-export function SurveyContent({ blocks, homeURL }: { blocks?: ContentBlock[]; homeURL: string }) {
+export function SurveyContent({ blocks, homeURL, language = 'de' }: { blocks?: ContentBlock[]; homeURL: string; language?: ParticipantLanguage }) {
   return <>{blocks?.map((block, index) => block.blockType === 'text'
     ? <div className="survey-content survey-content--text" key={index}>{renderNode(block.content.root, 0)}</div>
-    : block.blockType === 'image' ? <ContentImage key={`${index}-${homeURL}-${block.image}`} block={block} homeURL={homeURL} /> : null)}</>
+    : block.blockType === 'image' ? <ContentImage language={language} key={`${index}-${homeURL}-${block.image}`} block={block} homeURL={homeURL} /> : null)}</>
 }
