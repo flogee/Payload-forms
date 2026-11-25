@@ -217,6 +217,20 @@ const updatedDraft = await updatedSurvey.json() as any
 assert.equal(updatedDraft.title, 'MCP TEST UPDATED')
 assert.equal(updatedDraft.hideQuestionCodes, true, 'an older MCP update preserves the participant display setting')
 assert.equal(updatedDraft.participantLanguage, 'en', 'an older MCP update preserves the participant UI language')
+const registrationSlug = `mcp-email-${randomUUID()}`
+const registrationDraft = await mcp('tools/call', { name: 'createSurveyDraft', arguments: {
+  title: 'SYNTHETIC EMAIL REGISTRATION', slug: registrationSlug, participantLanguage: 'en', emailRegistration: true,
+  definition: { version: registrationSlug, introduction: ['Synthetic email registration'], sections: [] },
+} })
+assert.ok(!registrationDraft.result?.isError && !registrationDraft.error, 'MCP can prepare a dedicated registration')
+const { id: registrationID } = JSON.parse(registrationDraft.result.content[0].text)
+const registeredDraft = await request(`/api/surveys/${registrationID}`, { headers: auth })
+assert.equal(registeredDraft.status, 200)
+const draftRegistration = await registeredDraft.json() as { phase: string; privacy: { contactMode: string; enabled: boolean } }
+assert.equal(draftRegistration.phase, 'draft')
+assert.equal(draftRegistration.privacy.contactMode, 'email-only')
+assert.equal(draftRegistration.privacy.enabled, false)
+assert.equal((await request(`/f/${registrationSlug}`)).status, 404, 'MCP cannot publish an email registration')
 const editablePretest = await mcp('tools/call', { name: 'updateSurveyDraft', arguments: { surveyID: survey.id, title: survey.title, slug: survey.slug, definition: fromStored(survey), hideQuestionCodes: true } })
 assert.ok(!editablePretest.result.isError, 'MCP can edit a pretest with test responses')
 const pretestDisplay = await request(`/api/surveys/${survey.id}?depth=0`, { headers: auth })

@@ -78,6 +78,12 @@ export const Surveys: CollectionConfig = {
       || (data.retentionReminders.enabled != null && typeof data.retentionReminders.enabled !== 'boolean'))) throw new APIError('Bitte die Fristerinnerungseinstellungen prüfen.', 400)
     const retentionReminders = { ...originalDoc?.retentionReminders, ...data.retentionReminders }
     if (retentionReminders.enabled && (!privacy.enabled || !privacy.retentionYears)) throw new APIError('Für Fristerinnerungen zuerst Datenschutzinformation und eine Frist in ganzen Kalenderjahren vorbereiten.', 400)
+    if (privacy.contactMode === 'email-only') {
+      if (definition.sections.length) throw new APIError('Eine E-Mail-Anmeldung hat keine Frageabschnitte.', 400)
+      if (merged.phase !== 'draft' && !privacy.enabled) throw new APIError('Für die E-Mail-Anmeldung zuerst die Datenschutzinformation vorbereiten.', 400)
+    } else if (!definition.sections.length) {
+      throw new APIError('Fragebögen benötigen mindestens einen Abschnitt.', 400)
+    }
     if (privacy.reviewed && privacyMissing(privacy).length) throw new APIError('Vor der fachlichen Bestätigung alle Datenschutzangaben ergänzen.', 400)
     if (merged.phase === 'pretest' && privacy.enabled && privacyMissing(privacy).length) throw new APIError('Vor dem Pretest mit Datenschutzinformation alle fehlenden Angaben ergänzen.', 400)
     if (merged.phase === 'live' && (operation === 'create' || originalDoc?.phase !== 'live')) {
@@ -117,7 +123,7 @@ export const Surveys: CollectionConfig = {
       ] },
       { label: 'Fragen und Inhalte', fields: [
         { name: 'editorGuide', type: 'ui', admin: { components: { Field: '/components/SurveyEditorGuide#SurveyEditorGuide' } } },
-        { name: 'sections', label: 'Abschnitte', labels: { singular: 'Abschnitt', plural: 'Abschnitte' }, type: 'array', admin: { initCollapsed: true, className: 'survey-editor__outline', components: { RowLabel: '/components/SurveyEditorRowLabels#SurveyEditorSectionLabel' } }, required: true, fields: [{ name: 'key', label: 'Abschnittkennung', type: 'text', required: true }, { name: 'title', label: 'Titel', type: 'text', required: true }, { name: 'description', label: 'Hinweis', type: 'textarea' }, { name: 'questions', label: 'Fragen', labels: { singular: 'Frage', plural: 'Fragen' }, type: 'array', admin: { initCollapsed: true, components: { RowLabel: '/components/SurveyEditorRowLabels#SurveyEditorQuestionLabel' } }, fields: questionFields, required: true }, sectionContentField] },
+        { name: 'sections', label: 'Abschnitte', labels: { singular: 'Abschnitt', plural: 'Abschnitte' }, type: 'array', admin: { initCollapsed: true, className: 'survey-editor__outline', components: { RowLabel: '/components/SurveyEditorRowLabels#SurveyEditorSectionLabel' } }, fields: [{ name: 'key', label: 'Abschnittkennung', type: 'text', required: true }, { name: 'title', label: 'Titel', type: 'text', required: true }, { name: 'description', label: 'Hinweis', type: 'textarea' }, { name: 'questions', label: 'Fragen', labels: { singular: 'Frage', plural: 'Fragen' }, type: 'array', admin: { initCollapsed: true, components: { RowLabel: '/components/SurveyEditorRowLabels#SurveyEditorQuestionLabel' } }, fields: questionFields, required: true }, sectionContentField] },
       ] },
       { label: 'Dankeseite', fields: [
         { name: 'thankYouContent', label: 'Text nach dem Absenden', type: 'richText', editor: surveyTextEditor(),

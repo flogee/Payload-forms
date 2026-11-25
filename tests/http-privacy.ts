@@ -127,5 +127,59 @@ export async function checkPrivacyHTTP(base: string, token: string, apiKey: stri
   assert.ok(!JSON.stringify(logBody).includes(body.contact.email))
   await status(json(`/api/surveys/${survey.id}`, { phase: 'closed' }, 'PATCH', auth), 200, 'privacy-enabled form can close without mutating its frozen information')
   await status(request(`/datenschutz/${slug}`), 404, 'closed privacy information is not offered as an active participant page')
+
+  const registrationSlug = `email-registration-${randomUUID()}`
+  const registration = {
+    title: 'Fixture registration', slug: registrationSlug, participantLanguage: 'en',
+    ...toStored({ version: registrationSlug, introduction: ['Synthetic registration copy'], sections: [] }),
+  }
+  const registrationPrivacy = testPrivacy({ contactMode: 'email-only' })
+  await status(json('/api/surveys', registration, 'POST', auth), 400, 'ordinary forms still require a section')
+  await status(json('/api/surveys', {
+    ...registration, phase: 'pretest', privacy: { ...registrationPrivacy, enabled: false },
+  }, 'POST', auth), 400, 'registration requires a complete enabled notice before participation')
+  const registrationResponse = await json('/api/surveys', {
+    ...registration, phase: 'pretest', privacy: registrationPrivacy,
+  }, 'POST', auth)
+  assert.equal(registrationResponse.status, 201, 'email-only registration permits no question sections')
+  const registrationSurvey = (await registrationResponse.json() as { doc: { id: number } }).doc
+  const registrationPage = await request(`/f/${registrationSlug}`)
+  assert.equal(registrationPage.status, 200)
+  const registrationHTML = await registrationPage.text()
+  assert.match(registrationHTML, /<input(?=[^>]*type="email")[^>]*id="registration-email"/)
+  assert.match(registrationHTML, /<button[^>]*type="submit"[^>]*>Register<\/button>/)
+  assert.doesNotMatch(registrationHTML, /<input[^>]*type="text"/)
+
+  const registrationSubmission = {
+    surveyID: registrationSurvey.id, version: registrationSlug, submissionID: randomUUID(),
+    confirmTest: true, durationSeconds: 4, answers: {}, contact: { email: 'registration@example.invalid' },
+    privacy: { noticeHash: privacyHash(privacyNotice(registrationPrivacy)!), consent: true, contactConsent: true },
+  }
+  await status(json('/api/survey/submit', { ...registrationSubmission, contact: undefined }), 400, 'registration needs an email')
+  await status(json('/api/survey/submit', {
+    ...registrationSubmission, contact: { email: 'registration@example.org' },
+  }), 400, 'registration pretest refuses real-domain addresses')
+  await status(json('/api/survey/submit', {
+    ...registrationSubmission, contact: { ...registrationSubmission.contact, name: 'Synthetic name' },
+  }), 400, 'email-only mode refuses a name even when sent directly')
+  await status(json('/api/survey/submit', {
+    ...registrationSubmission, answers: { extra: 'Synthetic answer' },
+  }), 400, 'registration rejects survey answers')
+  const registrationSaved = await json('/api/survey/submit', registrationSubmission)
+  assert.equal(registrationSaved.status, 201)
+  const registrationID = (await registrationSaved.json() as { id: number }).id
+  const storedRegistration = await request(`/api/responses/${registrationID}?depth=0`, { headers: auth })
+  assert.equal(storedRegistration.status, 200)
+  const storedRegistrationDoc = await storedRegistration.json() as { answers: unknown }
+  assert.deepEqual(storedRegistrationDoc.answers, {})
+  assert.ok(!JSON.stringify(storedRegistrationDoc).includes(registrationSubmission.contact.email))
+  const storedAddress = await request(`/api/response-contacts?depth=0&where[response][equals]=${registrationID}`, { headers: auth })
+  assert.equal(storedAddress.status, 200)
+  const registrationContacts = (await storedAddress.json() as { docs: { email: string; name: string; testOnly: boolean }[] }).docs
+  assert.equal(registrationContacts.length, 1)
+  assert.equal(registrationContacts[0].email, registrationSubmission.contact.email)
+  assert.equal(registrationContacts[0].name, '')
+  assert.equal(registrationContacts[0].testOnly, true)
+
   console.log('PASS: versioned privacy notices, separate contacts, consent validation, restricted individual export, confirmed atomic erasure and suppressed retries.')
 }

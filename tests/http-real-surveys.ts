@@ -157,5 +157,26 @@ export async function checkRealSurveysHTTP(base: string, token: string, apiKey: 
   await status(request(`/f/${closeSlug}`), 404, 'closed live form is unavailable')
   await status(json('/api/survey/submit', { ...input, surveyID: closeID, version: closeSlug, submissionID: randomUUID() }, 'POST', {}), 403, 'closed live rejects submissions')
   await status(json(`/api/surveys/${closeID}`, { phase: 'live' }, 'PATCH'), 200, 'a closed survey without real answers can reopen')
+  const registrationSlug = `synthetic-live-registration-${randomUUID()}`
+  const registrationPrivacy = testPrivacy({ contactMode: 'email-only', reviewed: true })
+  const createdRegistration = await json('/api/surveys', {
+    title: 'SYNTHETIC LIVE REGISTRATION', slug: registrationSlug, phase: 'live', privacy: registrationPrivacy,
+    ...toStored({ version: registrationSlug, introduction: [], sections: [] }),
+  })
+  assert.equal(createdRegistration.status, 201)
+  const { id: registrationID } = (await createdRegistration.json() as { doc: { id: number } }).doc
+  const inputRegistration = {
+    surveyID: registrationID, version: registrationSlug, submissionID: randomUUID(), confirmParticipation: true,
+    durationSeconds: 2, answers: {}, contact: { email: 'synthetic-registration@example.org' },
+    privacy: { noticeHash: privacyHash(privacyNotice(registrationPrivacy)!), consent: true, contactConsent: true },
+  }
+  const savedRegistration = await json('/api/survey/submit', inputRegistration, 'POST', {})
+  assert.equal(savedRegistration.status, 201, 'live registration accepts an email on its own')
+  const { id: responseID } = await savedRegistration.json() as { id: number }
+  const storedContact = await request(`/api/response-contacts?depth=0&where[response][equals]=${responseID}`, { headers: auth })
+  assert.equal(storedContact.status, 200)
+  const { docs: registrationContacts } = await storedContact.json() as { docs: { email: string; testOnly: boolean }[] }
+  assert.equal(registrationContacts[0].email, inputRegistration.contact.email)
+  assert.equal(registrationContacts[0].testOnly, false)
   console.log('PASS: synthetic live activation, real consent and contact contracts, protected analysis, immutable versions, closure, mode markers and fictional machine separation.')
 }

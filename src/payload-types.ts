@@ -263,112 +263,114 @@ export interface Survey {
           }
       )[]
     | null;
-  sections: {
-    key: string;
-    title: string;
-    description?: string | null;
-    questions: {
-      code: string;
-      block: string;
-      label: string;
-      kind:
-        | 'single'
-        | 'multiple'
-        | 'text'
-        | 'textarea'
-        | 'count'
-        | 'counts'
-        | 'matrix'
-        | 'committees'
-        | 'slider'
-        | 'stars'
-        | 'smiley'
-        | 'ranking';
-      help?: string | null;
-      optional?: boolean | null;
-      options?:
-        | {
-            value: string;
-            label: string;
-            exclusive?: boolean | null;
-            id?: string | null;
-          }[]
-        | null;
-      rows?:
-        | {
-            key: string;
-            label: string;
-            id?: string | null;
-          }[]
-        | null;
-      allowNA?: boolean | null;
-      min?: number | null;
-      max?: number | null;
-      /**
-       * Ganze Schritte; der Zahlenbereich muss gleichmäßig teilbar sein. Beispiel: 0–100 mit Schrittweite 10.
-       */
-      step?: number | null;
-      lowLabel?: string | null;
-      highLabel?: string | null;
-      /**
-       * Für Agenten: {"field":"F19_dates","values":["1","2"]}. Nur vorherige Einfachauswahl als Bedingung zulässig.
-       */
-      showIf?:
-        | {
-            [k: string]: unknown;
-          }
-        | unknown[]
-        | string
-        | number
-        | boolean
-        | null;
-      id?: string | null;
-    }[];
-    content?:
-      | (
-          | {
-              /**
-               * Vor der ersten Frage oder unmittelbar nach der gewählten Frage.
-               */
-              afterQuestion?: string | null;
-              content: {
-                root: {
-                  type: string;
-                  children: {
-                    type: any;
-                    version: number;
-                    [k: string]: unknown;
-                  }[];
-                  direction: ('ltr' | 'rtl') | null;
-                  format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-                  indent: number;
-                  version: number;
-                };
+  sections?:
+    | {
+        key: string;
+        title: string;
+        description?: string | null;
+        questions: {
+          code: string;
+          block: string;
+          label: string;
+          kind:
+            | 'single'
+            | 'multiple'
+            | 'text'
+            | 'textarea'
+            | 'count'
+            | 'counts'
+            | 'matrix'
+            | 'committees'
+            | 'slider'
+            | 'stars'
+            | 'smiley'
+            | 'ranking';
+          help?: string | null;
+          optional?: boolean | null;
+          options?:
+            | {
+                value: string;
+                label: string;
+                exclusive?: boolean | null;
+                id?: string | null;
+              }[]
+            | null;
+          rows?:
+            | {
+                key: string;
+                label: string;
+                id?: string | null;
+              }[]
+            | null;
+          allowNA?: boolean | null;
+          min?: number | null;
+          max?: number | null;
+          /**
+           * Ganze Schritte; der Zahlenbereich muss gleichmäßig teilbar sein. Beispiel: 0–100 mit Schrittweite 10.
+           */
+          step?: number | null;
+          lowLabel?: string | null;
+          highLabel?: string | null;
+          /**
+           * Für Agenten: {"field":"F19_dates","values":["1","2"]}. Nur vorherige Einfachauswahl als Bedingung zulässig.
+           */
+          showIf?:
+            | {
                 [k: string]: unknown;
-              };
-              id?: string | null;
-              blockName?: string | null;
-              blockType: 'text';
-            }
-          | {
-              /**
-               * Vor der ersten Frage oder unmittelbar nach der gewählten Frage.
-               */
-              afterQuestion?: string | null;
-              image: number | Media;
-              /**
-               * Beschreibt den Inhalt für Personen, die das Bild nicht sehen können.
-               */
-              alt: string;
-              caption?: string | null;
-              id?: string | null;
-              blockName?: string | null;
-              blockType: 'image';
-            }
-        )[]
-      | null;
-    id?: string | null;
-  }[];
+              }
+            | unknown[]
+            | string
+            | number
+            | boolean
+            | null;
+          id?: string | null;
+        }[];
+        content?:
+          | (
+              | {
+                  /**
+                   * Vor der ersten Frage oder unmittelbar nach der gewählten Frage.
+                   */
+                  afterQuestion?: string | null;
+                  content: {
+                    root: {
+                      type: string;
+                      children: {
+                        type: any;
+                        version: number;
+                        [k: string]: unknown;
+                      }[];
+                      direction: ('ltr' | 'rtl') | null;
+                      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                      indent: number;
+                      version: number;
+                    };
+                    [k: string]: unknown;
+                  };
+                  id?: string | null;
+                  blockName?: string | null;
+                  blockType: 'text';
+                }
+              | {
+                  /**
+                   * Vor der ersten Frage oder unmittelbar nach der gewählten Frage.
+                   */
+                  afterQuestion?: string | null;
+                  image: number | Media;
+                  /**
+                   * Beschreibt den Inhalt für Personen, die das Bild nicht sehen können.
+                   */
+                  alt: string;
+                  caption?: string | null;
+                  id?: string | null;
+                  blockName?: string | null;
+                  blockType: 'image';
+                }
+            )[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
   /**
    * Optional. Erscheint unter der Speicherbestätigung und kann Links enthalten.
    */
@@ -414,9 +416,9 @@ export interface Survey {
     rights?: string | null;
     complaintAuthority?: string | null;
     /**
-     * Name und E-Mail werden in einem getrennten Bereich gespeichert und bleiben der Antwort zuordenbar. Das ergibt keine anonyme Erhebung.
+     * Kontaktdaten werden im geschützten Kontaktbereich gespeichert. Für eine eigenständige E-Mail-Anmeldung bleiben die Fragen und Abschnitte leer.
      */
-    contactMode?: ('none' | 'optional' | 'required') | null;
+    contactMode?: ('none' | 'optional' | 'required' | 'email-only') | null;
     contactPurpose?: string | null;
     contactRetention?: string | null;
     consentText?: string | null;
@@ -856,7 +858,7 @@ export interface PayloadMcpApiKey {
   };
   'payload-mcp-tool'?: {
     /**
-     * Legt einen vollständigen Fragebogen als Entwurf an. definition enthält version, introduction und sections mit stabilen Fragekennungen. Keine Veröffentlichung und keine Rohantworten.
+     * Legt einen vollständigen Fragebogen als Entwurf an. definition enthält version, introduction und sections mit stabilen Fragekennungen. Für eine eigenständige E-Mail-Anmeldung emailRegistration: true mit leeren sections verwenden. Die Datenschutzhinweise werden im Editor ergänzt. Keine Veröffentlichung und keine Rohantworten.
      */
     createSurveyDraft?: boolean | null;
     /**

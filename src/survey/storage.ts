@@ -10,7 +10,7 @@ function emptyEditor(value: Definition['thankYouContent']): boolean {
 }
 export function fromStored(doc: Record<string, any>): Definition {
   const blocks = (value: any) => value?.length ? value.map((block: any) => ({ ...block, ...(block.image != null ? { image: typeof block.image === 'object' ? block.image.id : block.image } : {}), ...(block.afterQuestion === '' ? { afterQuestion: undefined } : {}) })) : undefined
-  const input = compact({ version: doc.version, thankYouContent: emptyEditor(doc.thankYouContent) ? undefined : doc.thankYouContent, introduction: doc.introduction?.map((x: { text: string }) => x.text), introContent: blocks(doc.introContent), sections: doc.sections?.map((s: any) => ({ id: s.key, title: s.title, description: s.description, content: blocks(s.content), questions: s.questions?.map((q: any) => ({ ...q, id: q.code })) })) }) as Record<string, any>
+  const input = compact({ version: doc.version, thankYouContent: emptyEditor(doc.thankYouContent) ? undefined : doc.thankYouContent, introduction: doc.introduction?.map((x: { text: string }) => x.text), introContent: blocks(doc.introContent), sections: doc.sections?.map((s: any) => ({ id: s.key, title: s.title, description: s.description, content: blocks(s.content), questions: s.questions?.map((q: any) => ({ ...q, id: q.code })) })) ?? [] }) as Record<string, any>
   // compact removes Payload array IDs; re-add the stable research IDs explicitly.
   input.sections?.forEach((s: any, i: number) => { s.id = doc.sections[i].key; s.questions.forEach((q: Question, j: number) => { q.id = doc.sections[i].questions[j].code }) })
   return definitionSchema.parse(input) as Definition

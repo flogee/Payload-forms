@@ -51,6 +51,7 @@ export async function POST(req: Request) {
   const validated = validateAnswers(definition, input.answers)
   if (Object.keys(validated.errors).length) return json({ error: 'Bitte die markierten Angaben prüfen.', fields: validated.errors }, 400)
   const settings = readPrivacySettings(survey.privacy), notice = privacyNotice(settings)
+  if ((notice?.contactMode === 'email-only') !== (definition.sections.length === 0)) return json({ error: 'Diese Befragung ist nicht verfügbar.' }, 403)
   if (settings.enabled && !notice) return json({ error: 'Die Datenschutzinformation ist noch nicht vollständig vorbereitet.' }, 503)
   if (!settings.enabled && (input.privacy || input.contact)) return json({ error: 'Für diesen Pretest sind keine Datenschutz- oder Kontaktangaben vorgesehen.' }, 400)
   let receipt: PrivacyReceipt | undefined, contact

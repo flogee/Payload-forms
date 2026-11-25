@@ -25,11 +25,12 @@ export const privacyFields: Field[] = [
     admin: { description: '0 = keine automatische Fristprüfung. Für neue Einsendungen wird die Frist unveränderlich gespeichert. Muss zum Aufbewahrungstext passen; nach Beginn der Fassung unveränderlich. Keine automatische Löschung oder Anonymisierung.' } },
   { name: 'rights', label: 'Betroffenenrechte, Widerruf und Kontaktverfahren', type: 'textarea', maxLength: 4000 },
   { name: 'complaintAuthority', label: 'Zuständige Datenschutz-Aufsichtsbehörde', type: 'textarea', maxLength: 1000 },
-  { name: 'contactMode', label: 'Kontaktangaben für individuelle Rückmeldungen', type: 'select', defaultValue: 'none', options: [
+  { name: 'contactMode', label: 'Kontaktangaben und E-Mail-Anmeldung', type: 'select', defaultValue: 'none', options: [
     { value: 'none', label: 'Keine Kontaktangaben erheben' },
     { value: 'optional', label: 'Freiwillig für eine individuelle Rückmeldung' },
-    { value: 'required', label: 'Name und E-Mail für jede Teilnahme erforderlich' },
-  ], admin: { description: 'Name und E-Mail werden in einem getrennten Bereich gespeichert und bleiben der Antwort zuordenbar. Das ergibt keine anonyme Erhebung.' } },
+    { value: 'required', label: 'E-Mail für jede Teilnahme erforderlich (Name im Pretest erforderlich)' },
+    { value: 'email-only', label: 'Eigenständige Anmeldung nur mit E-Mail' },
+  ], admin: { description: 'Kontaktdaten werden im geschützten Kontaktbereich gespeichert. Für eine eigenständige E-Mail-Anmeldung bleiben die Fragen und Abschnitte leer.' } },
   { name: 'contactPurpose', label: 'Zweck und Umfang der Kontaktaufnahme', type: 'textarea', maxLength: 4000 },
   { name: 'contactRetention', label: 'Aufbewahrung und Löschung der Kontaktangaben', type: 'textarea', maxLength: 4000 },
   { name: 'consentText', label: 'Einwilligung zur Verarbeitung der Antworten', type: 'textarea', maxLength: 2000 },
