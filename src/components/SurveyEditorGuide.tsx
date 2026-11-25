@@ -13,12 +13,12 @@ export function SurveyEditorGuide() {
       <dl className="survey-editor__formats">{Object.entries(answerFormats).map(([kind, format]) => <div key={kind}>
         <dt>{format.label}</dt><dd>{format.description}</dd>
       </div>)}</dl>
-      <p>Einleitungsabsätze sowie Text- und Bildblöcke vermitteln Inhalte und erzeugen keine Antwortfelder.</p>
+      <p>Text- und Bildblöcke vermitteln Inhalte und erzeugen keine Antwortfelder.</p>
     </details>
   </div>
 }
 
 export function SurveyEditorFormatDescription({ path }: FieldDescriptionClientProps) {
   const kind = useFormFields(([fields]) => fields[path]?.value)
-  return <FieldDescription path={path} description={answerFormat(kind)?.description || 'Ein Antwortformat auswählen. Die Übersicht über alle Formate steht oberhalb der Einleitung.'} />
+  return <FieldDescription path={path} description={answerFormat(kind)?.description || 'Ein Antwortformat auswählen. Die Übersicht über alle Formate steht am Anfang des Reiters „Fragen und Inhalte“.'} />
 }
