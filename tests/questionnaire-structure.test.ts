@@ -24,6 +24,7 @@ test('answer semantics, placement, identities and ordering remain structural', (
     d => { d.sections[0].questions.reverse() }, d => { d.sections.push(structuredClone(d.sections[0])) },
     d => { d.sections[0].questions[0].id = 'new' }, d => { d.sections[0].questions[0].block = '3' },
     d => { d.sections[0].questions[0].kind = 'multiple' }, d => { d.sections[0].questions[0].optional = true },
+    d => { d.sections[0].questions[0].required = true },
     d => { d.sections[0].questions[0].allowNA = true }, d => { d.sections[0].questions[0].min = 1 },
     d => { d.sections[0].questions[0].max = 20 }, d => { d.sections[0].questions[0].step = 2 },
     d => { d.sections[0].questions[0].options!.reverse() }, d => { d.sections[0].questions[0].options![0].value = 'c' },
@@ -37,6 +38,7 @@ test('answer semantics, placement, identities and ordering remain structural', (
 
 test('native empty/default values normalize, while unknown fields fail closed', () => {
   const normalized = structuredClone(definition)
+  normalized.sections[0].questions[0].required = false
   normalized.sections[0].questions[0].optional = false; normalized.sections[0].questions[0].allowNA = false
   normalized.sections[0].questions[0].rows = []; normalized.sections[0].questions[0].options![0].exclusive = false
   assert.equal(definitionStructureHash(normalized), definitionStructureHash(definition))

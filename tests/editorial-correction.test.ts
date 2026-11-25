@@ -67,6 +67,7 @@ test('corrections require a fresh human-admin confirmation, reason and unchanged
       (d: any) => { d.sections[0].questions[0].options[0].value = 'changed' },
       (d: any) => { d.sections[0].questions[0].options.reverse() },
       (d: any) => { d.sections[0].questions[0].optional = true },
+      (d: any) => { d.sections[0].questions[0].required = true },
       (d: any) => { d.sections[0].questions[0].kind = 'multiple' },
       (d: any) => { d.introContent = [] },
       (d: any) => { d.version = 'different' },

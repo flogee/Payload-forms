@@ -26,6 +26,37 @@ test('all 25 draft blocks are covered and storage preserves the instrument', () 
   assert.deepEqual(fromStored(toStored(sample)), JSON.parse(JSON.stringify(sample)))
   assert.equal(definitionSchema.safeParse(sample).success, true)
 })
+test('required answers are checked only when visible and may explicitly decline to answer', () => {
+  const def: Definition = {
+    version: 'required-v1',
+    introduction: [],
+    sections: [
+      { id: 'start', title: 'Start', questions: [
+        { id: 'route', block: 'A', label: 'Route', kind: 'single', required: true,
+          options: [{ value: 'yes', label: 'Yes' }, { value: 'skip', label: 'Prefer not to say' }] },
+      ] },
+      { id: 'followUp', title: 'Follow-up', questions: [
+        { id: 'choices', block: 'B', label: 'Choices', kind: 'multiple', required: true,
+          showIf: { field: 'route', values: ['yes'] }, options: [{ value: 'one', label: 'One' }] },
+        { id: 'comment', block: 'B', label: 'Comment', kind: 'textarea', required: true,
+          showIf: { field: 'route', values: ['yes'] } },
+        { id: 'extra', block: 'B', label: 'Optional comment', kind: 'textarea', required: false },
+      ] },
+    ],
+  }
+  const required = 'Bitte beantworte diese Frage.'
+  const yes = { route: { choice: 'yes' } }
+  assert.deepEqual(validateAnswers(def, {}).errors, { route: required })
+  assert.deepEqual(validateAnswers(def, { ...yes, choices: { choice: [] }, comment: '  ' }).errors,
+    { choices: required, comment: required })
+  assert.deepEqual(validateSectionAnswers(def, yes, 'start'), { answers: yes, errors: {} })
+  const skipped = { route: { choice: 'skip' } }
+  assert.deepEqual(validateAnswers(def, { ...skipped, choices: { choice: ['one'] } }), { answers: skipped, errors: {} })
+  assert.deepEqual(validateAnswers(def, { ...yes, choices: { choice: ['one'] }, comment: 'Answer' }).errors, {})
+  const stored = fromStored(toStored(def))
+  assert.equal(stored.sections[0].questions[0].required, true)
+  assert.equal(stored.sections[1].questions[2].required, undefined)
+})
 test('true zero, unknown, not applicable and missing remain distinct', () => {
   const r = validateAnswers(sample, { F06_people: { r1: { status: 'value', value: 0 }, r2: { status: 'unknown' }, r3: { status: 'na' } } })
   assert.deepEqual(r.errors, {})

@@ -22,6 +22,9 @@ const questionFields: Field[] = [
   { name: 'kind', label: 'Antwortformat', type: 'select', required: true, options: Object.entries(answerFormats).map(([value, format]) => ({ value, label: format.label })), admin: { components: { Description: '/components/SurveyEditorGuide#SurveyEditorFormatDescription' } } },
   { name: 'help', label: 'Erläuterung', type: 'textarea' },
   { name: 'optional', label: 'Im Entwurf ausdrücklich optional', type: 'checkbox' },
+  { name: 'required', label: 'Antwort erforderlich', type: 'checkbox', admin: {
+    description: 'Teilnehmende müssen diese Frage beantworten, wenn sie eingeblendet ist.',
+  } },
   { name: 'options', label: 'Antwortoptionen', labels: { singular: 'Antwortoption', plural: 'Antwortoptionen' }, type: 'array', fields: [{ name: 'value', label: 'Stabiler Wert', type: 'text', required: true }, { name: 'label', label: 'Beschriftung', type: 'text', required: true }, { name: 'exclusive', label: 'Schließt andere Auswahl aus', type: 'checkbox' }], admin: { initCollapsed: true, components: { RowLabel: '/components/SurveyEditorRowLabels#SurveyEditorOptionLabel' }, condition: (_, q) => ['single', 'multiple', 'matrix', 'ranking'].includes(q.kind) } },
   { name: 'rows', label: 'Bewertungs- oder Zahlenzeilen', labels: { singular: 'Zeile', plural: 'Zeilen' }, type: 'array', fields: [{ name: 'key', label: 'Stabile Zeilenkennung', type: 'text', required: true }, { name: 'label', label: 'Beschriftung', type: 'text', required: true }], admin: { initCollapsed: true, components: { RowLabel: '/components/SurveyEditorRowLabels#SurveyEditorAnswerRowLabel' }, condition: (_, q) => ['matrix', 'counts'].includes(q.kind) } },
   { name: 'allowNA', label: '„Nicht zutreffend“ für Zahlen zulassen', type: 'checkbox', admin: { condition: (_, q) => ['count', 'counts'].includes(q.kind) } },

@@ -6,7 +6,7 @@ const key = z.string().regex(/^[A-Za-z][A-Za-z0-9_-]{0,79}$/)
 const questionSchema = z.object({
   id: key, block: z.string().min(1).max(30), label: z.string().min(1).max(1000),
   kind: z.enum(['text', 'textarea', 'single', 'multiple', 'count', 'matrix', 'counts', 'committees', 'slider', 'stars', 'smiley', 'ranking']),
-  help: z.string().max(4000).optional(), optional: z.boolean().optional(), allowNA: z.boolean().optional(),
+  help: z.string().max(4000).optional(), optional: z.boolean().optional(), required: z.boolean().optional(), allowNA: z.boolean().optional(),
   min: z.number().int().nonnegative().optional(), max: z.number().int().nonnegative().optional(),
   step: z.number().int().min(1).max(100).optional(),
   lowLabel: z.string().max(200).optional(), highLabel: z.string().max(200).optional(),
@@ -98,7 +98,10 @@ export function validateAnswers(def: Definition, input: unknown): { answers: Ans
   for (const q of all) {
     if (!visible(q, answers)) continue // Branch on validated parent; stale hidden answers are discarded.
     const value = raw[q.id]
-    if (value === undefined || value === null || value === '') continue
+    if (value === undefined || value === null || value === '' || (q.required && !hasAnswer(value))) {
+      if (q.required) errors[q.id] = 'Bitte beantworte diese Frage.'
+      continue
+    }
     const parsed = answerSchema(q).safeParse(value)
     if (parsed.success) answers[q.id] = parsed.data
     else errors[q.id] = parsed.error.issues[0].message
@@ -125,7 +128,7 @@ export function validateSectionAnswers(def: Definition, input: Answers, sectionI
   const active = new Set(section.questions.map(q => q.id))
   const answers = { ...checked.answers }
   for (const q of questions(def)) {
-    if (!active.has(q.id) && checked.errors[q.id] && visible(q, checked.answers)) answers[q.id] = input[q.id]
+    if (!active.has(q.id) && checked.errors[q.id] && input[q.id] !== undefined && visible(q, checked.answers)) answers[q.id] = input[q.id]
   }
   return { answers, errors: Object.fromEntries(Object.entries(checked.errors).filter(([id]) => active.has(id))) }
 }

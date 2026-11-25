@@ -22,6 +22,8 @@ import * as migration_20261125_120000_hide_participant_question_codes from './20
 
 import * as migration_20261125_170000_participant_language from './20261125_170000_participant_language';
 
+import * as migration_20261125_230000_required_survey_questions from './20261125_230000_required_survey_questions';
+
 export const migrations = [
   {
     up: migration_20261005_100813_initial_schema.up,
@@ -111,4 +113,5 @@ export const migrations = [
   { up: migration_20261125_090000_thank_you_content.up, down: migration_20261125_090000_thank_you_content.down, name: '20261125_090000_thank_you_content' },
   { up: migration_20261125_120000_hide_participant_question_codes.up, down: migration_20261125_120000_hide_participant_question_codes.down, name: '20261125_120000_hide_participant_question_codes' },
   { up: migration_20261125_170000_participant_language.up, down: migration_20261125_170000_participant_language.down, name: '20261125_170000_participant_language' },
+  { up: migration_20261125_230000_required_survey_questions.up, down: migration_20261125_230000_required_survey_questions.down, name: '20261125_230000_required_survey_questions' },
 ];
