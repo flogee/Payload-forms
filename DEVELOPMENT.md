@@ -140,3 +140,38 @@ contract. Human reports/analysis follow committed edges, bounded at 1,000 record
 pretest edits do not produce edges. Individual snapshots and aggregate/MCP output
 shapes remain unchanged. This release needs migration 17, an additive audit table
 and nullable Payload lock relationship; follow INSTALL.md for upgrade/recovery.
+
+### Proposed MCP approval flow for live editorial corrections
+
+This is a design proposal. Installed MCP keys currently have no write access
+to live surveys. Keep the existing draft/pretest tool separate.
+
+1. A separately scoped machine key could submit a proposed editorial change
+   and its reason for one authorized survey. The server would use the current
+   saved instrument as the baseline and retain the proposed diff privately.
+   Return an opaque proposal ID and its status. Scope proposal reads to the
+   same survey and proposer. Do not expose responses or contacts.
+2. A signed-in human administrator would open the proposal in the Forms
+   editor. Show the survey title, phase, participation link, affected fields,
+   exact before/after text and link destinations. Explain that subsequent
+   participants see the revised copy and prior responses retain their original
+   instrument. Require fresh confirmation of unchanged meaning and a reason.
+3. Human approval in that editor would apply the exact reviewed proposal
+   through the existing guarded correction service. Bind approval to the
+   installation, survey ID, original revision, normalized change digest,
+   proposer and reviewing administrator. Enforce a short expiry, revocation,
+   and one-time consumption on the server. A chat reply or machine credential
+   alone cannot approve a live edit.
+4. If the phase, revision, permissions or proposed content changes, expire
+   the proposal and require new review. Validate structure, answer keys,
+   branching, privacy and survey identity with the same rules as the human
+   editor. Use the edit lock and audit journal; only a committed correction
+   counts as applied. Repeated requests return the recorded outcome. An
+   interrupted write follows the existing recovery path.
+5. A future implementation must cover rejected, stale, expired, concurrent
+   and replayed proposals, revoked permissions, failure between write and
+   audit, and preservation of previous responses. Record proposer, reviewer,
+   reason, timestamps and before/after in protected history.
+
+Suggested initial approval lifetime: 15 minutes. A human may decline or let a
+proposal expire. New machine scopes would be off by default.
