@@ -29,7 +29,7 @@ function question(q: Question) {
 
 /** Only the explicitly listed editorial fields may change within a frozen instrument. */
 export function definitionStructureHash(definition: Definition): string {
-  known(definition, ['version', 'introduction', 'sections', 'introContent'])
+  known(definition, ['version', 'introduction', 'sections', 'introContent', 'thankYouContent'])
   return digest({ version: definition.version, introContent: content(definition.introContent),
     sections: definition.sections.map(section => {
       known(section, ['id', 'title', 'description', 'questions', 'content'])

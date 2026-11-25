@@ -16,6 +16,8 @@ import * as migration_20261019_100000_qa_machine_budgets from './20261019_100000
 import * as migration_20261103_180000_first_real_response_freeze from './20261103_180000_first_real_response_freeze';
 import * as migration_20261116_081552_editorial_corrections from './20261116_081552_editorial_corrections';
 
+import * as migration_20261125_090000_thank_you_content from './20261125_090000_thank_you_content';
+
 export const migrations = [
   {
     up: migration_20261005_100813_initial_schema.up,
@@ -102,4 +104,5 @@ export const migrations = [
     down: migration_20261116_081552_editorial_corrections.down,
     name: '20261116_081552_editorial_corrections'
   },
+  { up: migration_20261125_090000_thank_you_content.up, down: migration_20261125_090000_thank_you_content.down, name: '20261125_090000_thank_you_content' },
 ];

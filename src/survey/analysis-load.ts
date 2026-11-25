@@ -26,7 +26,7 @@ export async function analysisSurveys(payload: Payload, scope: Scope) {
 export async function loadAnalysis(payload: Payload, surveyID: number, scope: Scope) {
   authorized(scope)
   const found = await payload.find({ collection: 'surveys', where: { id: { equals: surveyID } }, ...scope, overrideAccess: false, depth: 0, limit: 1,
-    select: { title: true, slug: true, version: true, phase: true, introduction: true, introContent: true, sections: true },
+    select: { title: true, slug: true, version: true, phase: true, introduction: true, introContent: true, thankYouContent: true, sections: true },
   })
   const survey = found.docs[0]
   const user = scope.req?.user ?? scope.user

@@ -6,7 +6,7 @@ import { privacyFields } from './privacy-fields'
 import { readPrivacySettings, privacyMissing } from '../survey/privacy'
 import { readNotificationSettings } from '../survey/notifications'
 import { canonicalJSON } from '../survey/privacy-crypto'
-import { introContentField, sectionContentField } from './content-fields'
+import { introContentField, sectionContentField, surveyTextEditor } from './content-fields'
 import { readBranding, surveyImageIDs } from '../survey/branding'
 import { answerFormats } from '../components/SurveyEditor.helpers'
 import { livePrivacyReady, realSurveysEnabled } from '../survey/participation'
@@ -39,7 +39,7 @@ export const Surveys: CollectionConfig = {
   access: { read: ({ req }) => staff({ req }) ? req.user && '_strategy' in req.user && req.user._strategy === 'mcp-api-key' ? { phase: { in: ['draft', 'pretest'] } } : true : false, create: staff, update: staff, delete: () => false },
   hooks: { beforeChange: [async ({ data, originalDoc, operation, req }) => {
     let correction
-    if (operation === 'update' && originalDoc?.firstRealResponseAt) {
+    if (operation === 'update' && (originalDoc?.phase === 'live' || originalDoc?.firstRealResponseAt)) {
       if (instrumentFields.some(k => data[k] !== undefined && canonicalJSON(data[k]) !== canonicalJSON(originalDoc[k]))) {
         let same = false
         try { same = canonicalJSON(editorialState(originalDoc)) === canonicalJSON(editorialState({ ...originalDoc, ...data })) }
@@ -50,7 +50,7 @@ export const Surveys: CollectionConfig = {
           for (const k of instrumentFields) if (data[k] !== undefined) data[k] = structuredClone(originalDoc[k])
         } else correction = prepareEditorialCorrection(originalDoc, { ...originalDoc, ...data }, req.user, data.editorialCorrection, data.correctionReason)
       }
-      if (data.phase && ![originalDoc.phase, 'closed'].includes(data.phase)) throw new APIError('Eine gestartete Fassung kann nur geschlossen werden.', 400)
+      if (originalDoc.firstRealResponseAt && data.phase && ![originalDoc.phase, 'closed'].includes(data.phase)) throw new APIError('Eine gestartete Fassung kann nur geschlossen werden.', 400)
     }
     const merged = { ...originalDoc, ...data }
     if (data.notifications !== undefined) try {
@@ -101,9 +101,9 @@ export const Surveys: CollectionConfig = {
         { name: 'version', label: 'Erhebungsfassung', type: 'text', required: true, unique: true },
         { name: 'phase', label: 'Status', type: 'select', required: true, defaultValue: 'draft', options: [{ label: 'Entwurf', value: 'draft' }, { label: 'Pretest mit Testdaten', value: 'pretest' }, { label: 'Echte Erhebung (Betreiberfreigabe erforderlich)', value: 'live' }, { label: 'Geschlossen', value: 'closed' }] },
     ] },
-    { type: 'collapsible', label: 'Korrekturmodus', admin: { initCollapsed: true, condition: data => !!data.firstRealResponseAt }, fields: [
+    { type: 'collapsible', label: 'Korrekturmodus', admin: { initCollapsed: true, condition: data => data.phase === 'live' || !!data.firstRealResponseAt }, fields: [
       { name: 'correctionNotice', type: 'ui', admin: { components: { Field: '/components/SurveyCorrectionNotice#SurveyCorrectionNotice' } } },
-      { name: 'editorialCorrection', label: 'Ich bestätige: Die Bedeutung der Fragen und Antwortmöglichkeiten bleibt unverändert.', type: 'checkbox', virtual: true,
+      { name: 'editorialCorrection', label: 'Ich bestätige: Die Änderung ist für neue Teilnahmen sichtbar. Die Bedeutung der Fragen und Antworten bleibt gleich.', type: 'checkbox', virtual: true,
         admin: { readOnly: false }, access: { create: () => false, update: ({ req }) => managesTeam(req.user) }, hooks: { afterRead: [() => false] } },
       { name: 'correctionReason', label: 'Grund der Korrektur', type: 'textarea', maxLength: 500, virtual: true,
         access: { create: () => false, update: ({ req }) => managesTeam(req.user) }, hooks: { afterRead: [() => ''] },
@@ -116,6 +116,10 @@ export const Surveys: CollectionConfig = {
         { name: 'introduction', label: 'Einleitung', type: 'array', labels: { singular: 'Absatz', plural: 'Absätze' }, admin: { initCollapsed: true, className: 'survey-editor__outline', components: { RowLabel: '/components/SurveyEditorRowLabels#SurveyEditorIntroductionLabel' } }, fields: [{ name: 'text', label: 'Absatz', type: 'textarea', required: true }] },
         introContentField,
         { name: 'sections', label: 'Abschnitte', labels: { singular: 'Abschnitt', plural: 'Abschnitte' }, type: 'array', admin: { initCollapsed: true, className: 'survey-editor__outline', components: { RowLabel: '/components/SurveyEditorRowLabels#SurveyEditorSectionLabel' } }, required: true, fields: [{ name: 'key', label: 'Abschnittkennung', type: 'text', required: true }, { name: 'title', label: 'Titel', type: 'text', required: true }, { name: 'description', label: 'Hinweis', type: 'textarea' }, { name: 'questions', label: 'Fragen', labels: { singular: 'Frage', plural: 'Fragen' }, type: 'array', admin: { initCollapsed: true, components: { RowLabel: '/components/SurveyEditorRowLabels#SurveyEditorQuestionLabel' } }, fields: questionFields, required: true }, sectionContentField] },
+      ] },
+      { label: 'Dankeseite', fields: [
+        { name: 'thankYouContent', label: 'Text nach dem Absenden', type: 'richText', editor: surveyTextEditor(),
+          admin: { description: 'Optional. Erscheint unter der Speicherbestätigung und kann Links enthalten.' } },
       ] },
       { label: 'Datenschutz', fields: [
         { name: 'privacyStatus', label: 'Stand der Datenschutzangaben', type: 'ui', admin: { components: { Field: '/components/SurveyPrivacyStatus#SurveyPrivacyStatus' } } },

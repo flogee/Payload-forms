@@ -87,7 +87,7 @@ export default buildConfig({
   logger: process.env.NODE_ENV === 'production' ? logger : undefined,
   plugins: [r2Storage({ bucket: mediaBucket, collections: { media: { prefix: IMAGE_PREFIX } }, clientUploads: false }), mcpPlugin({
     // Automatic write-tool schema conversion uses dynamic evaluation, unavailable in Workers.
-    collections: { surveys: { enabled: { find: true, create: false, update: false, delete: false }, description: 'Versionierte Fragebögen lesen. Für Entwürfe die eigenen createSurveyDraft/updateSurveyDraft-Werkzeuge verwenden. Keine Rohantworten.' } },
+    collections: { surveys: { enabled: { find: true, create: false, update: false, delete: false }, description: 'Versionierte Fragebögen lesen. Vor einem Update ID, slug, version und phase mit dem gewünschten Teilnahmelink abgleichen. Zum Bearbeiten von Entwürfen und Testfassungen die eigenen createSurveyDraft/updateSurveyDraft-Werkzeuge verwenden. Keine Rohantworten.' } },
     overrideAuth: async (_req, resolve) => {
       const settings = await resolve()
       const surveys = settings.surveys && typeof settings.surveys === 'object' ? settings.surveys : {}

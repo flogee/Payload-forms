@@ -43,8 +43,9 @@ export async function checkRealSurveysHTTP(base: string, token: string, apiKey: 
   await status(request(`/f/${realFixtureSlug}/images/${imageID}`), 200, 'live serves only its referenced images')
   await status(request(`/f/${realFixtureSlug}/images/2147483647`), 404, 'foreign live image is unavailable')
   await status(request(`/api/survey/share/${survey.id}`, { headers: auth }), 200, 'team may share an enabled live version')
-  await status(json(path, { title: 'Editable before the first real answer' }, 'PATCH'), 200, 'live without real answers remains editable')
-  await status(json(path, { title: survey.title }, 'PATCH'), 200, 'restore the synthetic title')
+  const earlyCorrection = { title: 'Clarified synthetic title' }
+  await status(json(path, earlyCorrection, 'PATCH'), 400, 'live correction requires confirmation before the first response')
+  await status(json(path, { ...earlyCorrection, editorialCorrection: true, correctionReason: 'Clarify the synthetic title' }, 'PATCH'), 200, 'confirmed live correction before the first response')
   const privacy = { noticeHash: privacyHash(privacyNotice(settings)!), consent: true, contactConsent: false }
   const input = { surveyID: survey.id, version: definition.version, submissionID: randomUUID(), confirmParticipation: true,
     durationSeconds: 2, answers: {}, privacy }
@@ -102,7 +103,7 @@ export async function checkRealSurveysHTTP(base: string, token: string, apiKey: 
   assert.deepEqual(retained.answers, originalResponse.answers)
   const auditPath = `/api/survey-corrections?depth=0&where[survey][equals]=${survey.id}`
   const audits = await (await request(auditPath, { headers: auth })).json() as any
-  assert.equal(audits.totalDocs, 1); assert.equal(audits.docs[0].status, 'committed')
+  assert.equal(audits.totalDocs, 2); assert.equal(audits.docs[0].status, 'committed')
   assert.equal(audits.docs[0].after.definition.sections[0].questions[0].label, 'Clarified fictional text')
   await status(request(auditPath), 403, 'anonymous cannot read correction history')
   await status(json(`/api/survey-corrections/${audits.docs[0].id}`, { reason: 'Tamper' }, 'PATCH'), 403, 'audit history cannot be edited')

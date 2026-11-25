@@ -91,6 +91,7 @@ export function questionnaireMarkdown(source: Record<string, any>): string {
       lines.push(...contentLines(section.content?.filter(block => block.afterQuestion === question.id)))
     }
   }
+  if (definition.thankYouContent) lines.push('## Dankeseite', '', plain(richText(definition.thankYouContent.root).trim()), '')
   lines.push('## Datenschutz und Teilnahme', '')
   for (const [key, value] of Object.entries(privacy)) lines.push(`- ${privacyLabels[key as keyof typeof privacyLabels]}: ${plain(typeof value === 'boolean' ? value ? 'ja' : 'nein' : String(value))}`)
   return lines.join('\n') + '\n'

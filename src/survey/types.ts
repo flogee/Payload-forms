@@ -6,9 +6,9 @@ export type Question = {
   step?: number; lowLabel?: string; highLabel?: string;
   showIf?: { field: string; values: string[] }; optional?: boolean
 }
-import type { ContentBlock } from './content'
+import type { ContentBlock, RichTextContent } from './content'
 export type Section = { id: string; title: string; description?: string; questions: Question[]; content?: ContentBlock[] }
-export type Definition = { version: string; introduction: string[]; sections: Section[]; introContent?: ContentBlock[] }
+export type Definition = { version: string; introduction: string[]; sections: Section[]; introContent?: ContentBlock[]; thankYouContent?: RichTextContent | null }
 export type Choice = { choice: string | string[]; other?: string }
 export type Count = { status: 'value' | 'unknown' | 'na'; value?: number; note?: string }
 export type Ranking = { order: string[] }

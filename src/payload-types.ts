@@ -369,6 +369,24 @@ export interface Survey {
       | null;
     id?: string | null;
   }[];
+  /**
+   * Optional. Erscheint unter der Speicherbestätigung und kann Links enthalten.
+   */
+  thankYouContent?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
   privacy?: {
     enabled?: boolean | null;
     /**
@@ -834,7 +852,7 @@ export interface PayloadMcpApiKey {
      */
     createSurveyDraft?: boolean | null;
     /**
-     * Ersetzt einen Entwurf oder Pretest mit der vollständig angegebenen Fassung. Echte Antworten frieren die Fassung ein; Testantworten nicht.
+     * Aktualisiert die angegebene surveyID im Status draft oder pretest mit der vollständigen Definition. Für denselben Teilnahmelink den vorhandenen Pretest und dessen slug und version beibehalten. Ein separater Entwurf aktualisiert den Pretest nicht. Testantworten sperren die Fassung nicht. Nach der ersten echten Antwort sowie im Status live oder closed ist dieses Werkzeug gesperrt. Ändert keinen Status. Optionaler formatierter Dankestext: definition.thankYouContent; weglassen zum Beibehalten, null zum Leeren.
      */
     updateSurveyDraft?: boolean | null;
     /**
@@ -1133,6 +1151,7 @@ export interface SurveysSelect<T extends boolean = true> {
             };
         id?: T;
       };
+  thankYouContent?: T;
   privacy?:
     | T
     | {

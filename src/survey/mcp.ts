@@ -25,7 +25,7 @@ export const draftTools = [
   },
   {
     name: 'updateSurveyDraft',
-    description: 'Ersetzt einen Entwurf oder Pretest mit der vollständig angegebenen Fassung. Echte Antworten frieren die Fassung ein; Testantworten nicht.',
+    description: 'Aktualisiert die angegebene surveyID im Status draft oder pretest mit der vollständigen Definition. Für denselben Teilnahmelink den vorhandenen Pretest und dessen slug und version beibehalten. Ein separater Entwurf aktualisiert den Pretest nicht. Testantworten sperren die Fassung nicht. Nach der ersten echten Antwort sowie im Status live oder closed ist dieses Werkzeug gesperrt. Ändert keinen Status. Optionaler formatierter Dankestext: definition.thankYouContent; weglassen zum Beibehalten, null zum Leeren.',
     parameters: updatedSchema.shape,
     handler: async (args: Record<string, unknown>, req: PayloadRequest) => {
       if (!req.user) throw new Error('Anmeldung erforderlich')

@@ -20,7 +20,7 @@ export async function loadSurveyReport(payload: Payload, surveyID: number, user:
   if (!isTeamUser(user) || user._strategy === 'mcp-api-key') throw new AnalysisError('Der Gesamtbericht ist ausschließlich im persönlichen Teamzugang verfügbar.', 403)
   const scope = { user, overrideAccess: false as const, depth: 0 }
   const found = await payload.find({ collection: 'surveys', ...scope, where: { id: { equals: surveyID } }, limit: 1,
-    select: { title: true, slug: true, version: true, phase: true, firstRealResponseAt: true, introduction: true, introContent: true, sections: true },
+    select: { title: true, slug: true, version: true, phase: true, firstRealResponseAt: true, introduction: true, introContent: true, thankYouContent: true, sections: true },
   })
   const survey = found.docs[0]
   if (!survey) throw new AnalysisError('Fragebogen nicht gefunden.', 404)

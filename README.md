@@ -4,6 +4,28 @@ An MIT-licensed, self-hosted questionnaire application built with Payload CMS, N
 
 Create versioned questionnaires, share a participation link or QR code, and review responses in a protected administration area. The participant interface is currently German. Fictional-data pretests are enabled by default. Operators can explicitly enable real surveys; each live version additionally requires complete, reviewed privacy settings and activation by an administrator.
 
+## MCP questionnaire editing contract
+
+Match the participation URL `/f/<slug>` to its survey ID, version and phase using
+`findSurveys`. The connected server's tool list and schema describe its installed capabilities.
+`updateSurveyDraft` replaces the full definition of that ID in either draft or
+pretest phase. Keep the existing pretest ID, slug and version to update the same
+participation link. Updating a separate draft changes only that draft. Test
+responses do not freeze a pretest. The tool cannot activate a survey, update
+live or closed surveys, or edit a survey after its first real response.
+
+A human administrator can make a meaning-preserving correction to a running
+live survey in the Forms editor. Every save that changes instrument content
+requires fresh confirmation and a reason, including before the first real response.
+The audit records the before/after versions. Existing answers retain their original
+instrument. Structural changes require a new version.
+
+The optional rich-text field `definition.thankYouContent` is shown below the
+save confirmation. It supports the same formatted text and links as section text.
+An omitted field preserves existing content on update; explicit `null` clears
+it. An installation must apply the additive nullable-column migration before
+running this version. Existing surveys start with the standard confirmation.
+
 ## What is included
 
 - Twelve response formats: single and multiple choice, short and long text, numbers, numeric rows, responsive Likert matrices, repeatable lists, sliders, stars, smileys, and ranking. Matrices use clickable radio scales on wide screens and labeled choices under each statement on narrow screens; each row can be cleared independently.

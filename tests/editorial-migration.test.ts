@@ -9,7 +9,9 @@ test('editorial upgrade is additive and preserves prior responses, permanent fre
   const args = { db: { run: async (statement: any) => db.exec(dialect.sqlToQuery(statement).sql) } } as any
   try {
     db.exec('PRAGMA foreign_keys=ON')
-    for (const migration of migrations.slice(0, -1)) await migration.up(args)
+    const index = migrations.findIndex(migration => migration.name === '20261116_081552_editorial_corrections')
+    assert.ok(index >= 0)
+    for (const migration of migrations.slice(0, index)) await migration.up(args)
     db.exec(`INSERT INTO users(id,email) VALUES(1,'synthetic@localhost.invalid');
       INSERT INTO surveys(id,title,slug,version,phase) VALUES(1,'Synthetic','synthetic','synthetic-v1','live');
       INSERT INTO responses(submission_key,survey_id,version,test_only,answers,instrument) VALUES('synthetic',1,'synthetic-v1',0,'{}','{}');
@@ -18,7 +20,7 @@ test('editorial upgrade is additive and preserves prior responses, permanent fre
     const tables = ['users', 'surveys', 'responses', 'payload_locked_documents_rels', 'email_usage', 'image_storage_usage', 'public_request_usage']
     const before = tables.map(table => db.prepare(`SELECT * FROM ${table}`).all())
     const fk = db.prepare('PRAGMA foreign_key_list(payload_locked_documents_rels)').all()
-    await migrations.at(-1)!.up(args)
+    await migrations[index].up(args)
     tables.forEach((table, i) => {
       const rows = db.prepare(`SELECT * FROM ${table}`).all().map(row => { if (table === 'payload_locked_documents_rels') delete row.survey_corrections_id; return row })
       assert.deepEqual(rows, before[i], table)
@@ -26,6 +28,6 @@ test('editorial upgrade is additive and preserves prior responses, permanent fre
     assert.deepEqual(db.prepare('PRAGMA foreign_key_list(payload_locked_documents_rels)').all().filter(row => row.from !== 'survey_corrections_id').map(({ id: _id, ...row }) => row), fk.map(({ id: _id, ...row }) => row))
     assert.equal(db.prepare('SELECT count(*) n FROM survey_corrections').get()!.n, 0)
     assert.throws(() => db.exec('UPDATE surveys SET first_real_response_at=NULL'), /permanent/)
-    await assert.rejects(migrations.at(-1)!.down(args), /gesperrt/)
+    await assert.rejects(migrations[index].down(args), /gesperrt/)
   } finally { db.close() }
 })

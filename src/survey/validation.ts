@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { Answers, Choice, Count, Definition, Question } from './types'
-import { contentBlocksSchema } from './content'
+import { contentBlocksSchema, richTextContentSchema } from './content'
 import { sliderSettings } from './voting'
 const key = z.string().regex(/^[A-Za-z][A-Za-z0-9_-]{0,79}$/)
 const questionSchema = z.object({
@@ -16,6 +16,7 @@ const questionSchema = z.object({
 })
 export const definitionSchema = z.object({
   version: z.string().min(1).max(100), introduction: z.array(z.string().max(4000)).max(10), introContent: contentBlocksSchema.optional(),
+  thankYouContent: richTextContentSchema.nullish(),
   sections: z.array(z.object({ id: key, title: z.string().min(1).max(200), description: z.string().max(1000).optional(), questions: z.array(questionSchema).min(1).max(80), content: contentBlocksSchema.optional() })).min(1).max(15)
 }).superRefine((def, ctx) => {
   if (new TextEncoder().encode(JSON.stringify(def)).length > 256000) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Die Fragebogenfassung ist zu groß (höchstens 256 KB).' })
