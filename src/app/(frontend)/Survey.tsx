@@ -47,6 +47,8 @@ export function Survey({ testOnly = true, definition, language = 'de', hideQuest
   const [step, setStep] = useState(-1), [answers, setAnswers] = useState<Answers>({}), [errors, setErrors] = useState<Record<string, string>>({}), [confirm, setConfirm] = useState(false), [busy, setBusy] = useState(false), [saved, setSaved] = useState(false), [message, setMessage] = useState('')
   const [consent, setConsent] = useState(false), [contactConsent, setContactConsent] = useState(false), [contact, setContact] = useState<Partial<ParticipantContact>>({})
   const started = useRef(0), submission = useRef(''), heading = useRef<HTMLHeadingElement>(null)
+  const registration = privacy?.contactMode === 'email-only'
+  const confirmed = confirm || (registration && !testOnly)
   useEffect(() => { if (saved) { window.scrollTo({ top: 0, behavior: 'instant' }); heading.current?.focus() } }, [saved])
   const sections = definition.sections, review = step === sections.length, all = questions(definition), applicable = all.filter(q => visible(q, answers)), completed = applicable.filter(q => hasAnswer(answers[q.id])).length
   const sectionIndexes = visibleSectionIndexes(definition, answers)
@@ -67,15 +69,23 @@ export function Survey({ testOnly = true, definition, language = 'de', hideQuest
     go(nextStep ?? sections.length)
   }
   const submit = async () => {
-    if (!confirm || busy) return
+    if (!confirmed || busy) return
     if (privacy?.legalBasis === 'consent' && !consent) { setMessage(t("Bitte die Zustimmung zur Verarbeitung der Antworten bestätigen.")); return }
-    if (privacy?.contactMode === 'required' && !contactConsent) { setMessage(t("Für diese Fassung sind Kontaktangaben und die gesonderte Zustimmung erforderlich.")); return }
-    if (contactConsent && (!(testOnly ? participantContactSchema : liveParticipantContactSchema).safeParse(contact).success || (testOnly && !contact.email?.toLowerCase().endsWith('.invalid')))) {
-      setMessage(testOnly ? t("Bitte einen erfundenen Namen und eine gültige Test-E-Mail mit der Endung .invalid ergänzen.") : t("Bitte eine gültige E-Mail-Adresse ergänzen.")); return
+    if ((registration || privacy?.contactMode === 'required') && !contactConsent) { setMessage(t("Für diese Fassung sind Kontaktangaben und die gesonderte Zustimmung erforderlich.")); return }
+    const contactSchema = testOnly && !registration ? participantContactSchema : liveParticipantContactSchema
+    if (contactConsent && (!contactSchema.safeParse(contact).success || (testOnly && !contact.email?.toLowerCase().endsWith('.invalid')))) {
+      setMessage(!testOnly ? t("Bitte eine gültige E-Mail-Adresse ergänzen.") : registration
+        ? t("Bitte eine gültige Test-E-Mail mit der Endung .invalid eingeben.")
+        : t("Bitte einen erfundenen Namen und eine gültige Test-E-Mail mit der Endung .invalid ergänzen."))
+      return
+    }
+    if (registration && !submission.current) {
+      started.current = Date.now()
+      submission.current = crypto.randomUUID()
     }
     setBusy(true); setMessage('')
     try {
-      const res = await fetch('/api/survey/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ surveyID, instrumentRevision, version: definition.version, submissionID: submission.current, durationSeconds: Math.min(86400, Math.max(0, Math.round((Date.now() - started.current) / 1000))), ...(testOnly ? { confirmTest: confirm } : { confirmParticipation: confirm }), answers, website: '',
+      const res = await fetch('/api/survey/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ surveyID, instrumentRevision, version: definition.version, submissionID: submission.current, durationSeconds: Math.min(86400, Math.max(0, Math.round((Date.now() - started.current) / 1000))), ...(testOnly ? { confirmTest: confirmed } : { confirmParticipation: confirmed }), answers, website: '',
         ...(evaluationRun ? { evaluationRun } : {}),
         ...(privacy ? { privacy: { noticeHash: privacyHash, consent, contactConsent }, ...(contactConsent ? { contact } : {}) } : {}),
       }) })
@@ -85,6 +95,52 @@ export function Survey({ testOnly = true, definition, language = 'de', hideQuest
     } catch { setMessage(t("Keine Verbindung. Deine Angaben bleiben auf dieser Seite erhalten. Bitte erneut versuchen.")) }
     finally { setBusy(false) }
   }
+  if (registration) return <div className="shell" lang={language}>
+    <header className="topbar survey-topbar">
+      <SurveyBrand language={language} branding={branding} homeURL={homeURL} navigationURL={navigationURL} />
+      {testOnly && <span className="test-tag">{t("Pretest mit Testdaten")}</span>}
+    </header>
+    <main className="registration">
+      {saved ? <section className="success">
+        <h1 tabIndex={-1} ref={heading}>{testOnly ? t("Testanmeldung gespeichert") : t("Anmeldung gespeichert")}</h1>
+        {testOnly && <p>{t("Die Anmeldung wurde als Testdatensatz gespeichert.")}</p>}
+        {definition.thankYouContent && <SurveyContent language={language} blocks={[{ blockType: 'text', content: definition.thankYouContent }]} homeURL={homeURL} />}
+      </section> : <>
+        <h1>{title}</h1>
+        {definition.introduction.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+        <SurveyContent language={language} blocks={definition.introContent} homeURL={homeURL} />
+        <form onSubmit={event => { event.preventDefault(); void submit() }}>
+          <label className="registration-email" htmlFor="registration-email">{t("E-Mail-Adresse")}</label>
+          <input id="registration-email" name="email" type="email" value={contact.email ?? ''}
+            maxLength={254} autoComplete={testOnly ? 'off' : 'email'} required disabled={busy}
+            aria-describedby={testOnly ? 'registration-test-help' : undefined}
+            onChange={event => setContact({ email: event.target.value })} />
+          {testOnly && <p id="registration-test-help" className="help">{t("Nur erfundene E-Mail-Adressen mit der Endung .invalid verwenden, zum Beispiel test@example.invalid.")}</p>}
+          {privacy.legalBasis === 'consent' && privacy.consentText !== privacy.contactConsentText && <label className="test-confirm registration-confirm">
+            <input type="checkbox" required checked={consent} disabled={busy} onChange={event => setConsent(event.target.checked)} />
+            <span>{privacy.consentText}</span>
+          </label>}
+          <label className="test-confirm registration-confirm">
+            <input type="checkbox" required checked={contactConsent} disabled={busy} onChange={event => {
+              const accepted = event.target.checked
+              setContactConsent(accepted)
+              if (testOnly) setConfirm(accepted)
+              if (privacy.legalBasis === 'consent' && privacy.consentText === privacy.contactConsentText) setConsent(accepted)
+            }} />
+            <span>
+              {privacy.contactConsentText}
+              {testOnly && <span className="registration-test-confirm">{t("Ich verwende eine erfundene E-Mail-Adresse.")}</span>}
+            </span>
+          </label>
+          {message && <p role="alert" className="error-banner">{message}</p>}
+          <button className="primary" type="submit" disabled={busy}>
+            {busy ? t("Wird gespeichert …") : t("Anmeldung absenden")}
+          </button>
+        </form>
+      </>}
+      <footer><SurveyPrivacyDialog language={language} notice={privacy} testOnly={testOnly} /></footer>
+    </main>
+  </div>
   return <div className="shell" lang={language}><header className="topbar survey-topbar"><SurveyBrand language={language} branding={branding} homeURL={homeURL} navigationURL={navigationURL} /><div className="survey-tools"><span className="test-tag">{testOnly ? t("Arbeitsfassung · Pretest") : t("Erhebung")}</span></div></header><div className="layout"><aside className="sidebar"><p className="eyebrow">{t("Deine Rückmeldung")}</p><h2>{title}</h2><p className="side-intro">{t("Du kannst die Abschnitte der Reihe nach ausfüllen.")}</p><nav aria-label={t("Abschnitte")}><ol>{sectionIndexes.map((i, position) => { const s = sections[i]; return <li className={step === i ? 'active' : step > i ? 'done' : ''} key={s.id}><button disabled={step < 0 || busy || saved || i > step} onClick={() => go(i)}><span className="section-nav__number">{step > i ? '✓' : String(position + 1).padStart(2, '0')}</span><span className="section-nav__title">{s.title}</span></button></li> })}</ol></nav><p className="side-note">Payload Forms · {testOnly ? t("Pretest mit Testdaten") : t("Teilnahme")}</p></aside><main>
     {saved ? <section className="success"><div className="success-mark">✓</div><p className="eyebrow">{testOnly ? t("Test abgeschlossen") : t("Teilnahme abgeschlossen")}</p><h1 tabIndex={-1} ref={heading}>{testOnly ? t("Danke fürs Ausprobieren.") : t("Danke für deine Teilnahme.")}</h1><p>{testOnly ? t("Deine Testantwort wurde gespeichert. Sie bleibt als Testdatensatz gekennzeichnet.") : t("Deine Antwort wurde gespeichert.")}</p>{definition.thankYouContent && <SurveyContent language={language} blocks={[{ blockType: 'text', content: definition.thankYouContent }]} homeURL={homeURL} />}{testOnly && <p className="help">{t("Für den Pretest interessieren uns Verständnis, Dauer und fehlende Angaben. Die Auswertung im Teamzugang ersetzt keine wissenschaftliche Prüfung.")}</p>}{!testOnly && !evaluationRun && <ParticipantShare language={language} title={title} homeURL={homeURL} />}<button className={testOnly ? "primary" : "clear"} onClick={() => { setSaved(false); go(-1) }}>{testOnly ? t("Neue Testantwort beginnen") : t("Neue Teilnahme beginnen")}</button></section> : step < 0 ? <section className="intro"><p className="eyebrow">{testOnly ? t("Fragebogen · Pretest") : t("Fragebogen · Teilnahme")}</p><h1 tabIndex={-1} ref={heading}>{title}</h1><button type="button" className="primary intro-start" onClick={begin}>{testOnly ? t("Fragebogen ausprobieren") : t("Fragebogen beginnen")} <span aria-hidden="true">→</span></button><div className="intro-meta"><span>{blocks} {blocks === 1 ? t("Frageblock") : t("Frageblöcke")}</span><span>{sections.length} {sections.length === 1 ? t("Abschnitt") : t("Abschnitte")}</span></div>{definition.introduction.map((p, i) => <p key={i}>{p}</p>)}<SurveyContent language={language} blocks={definition.introContent} homeURL={homeURL} />{testOnly ? <div className="notice"><strong>{t("Dies ist eine Testversion.")}</strong><p>{t("Bitte verwende ausschließlich erfundene Angaben. Dieses Formular ist für einen Pretest freigegeben.")}</p></div> : <div className="notice"><strong>{t("Teilnahme an einer Erhebung")}</strong><p>{t("Bitte lies die Datenschutzinformation vor deiner Teilnahme. Deine Angaben werden beim Absenden gespeichert und sind dem berechtigten Team zugänglich.")}</p></div>}{privacy && <details className="privacy-summary"><summary>{t("Datenschutz und Teilnahme")} · {privacy.version}</summary><PrivacyNotice language={language} notice={privacy} draft={testOnly} /></details>}{privacy?.contactMode === 'required' && <p className="help">{testOnly ? t("Diese Fassung benötigt Name und E-Mail für individuelle Rückmeldungen.") : t("Diese Fassung benötigt eine E-Mail-Adresse für individuelle Rückmeldungen. Dein Name ist freiwillig.")} {testOnly && t("Im Pretest bitte ausschließlich erfundene Angaben verwenden.")}</p>}<p className="help">{t("Alle Fragen zum Inhalt können übersprungen werden. Dein Zwischenstand bleibt erhalten, solange diese Seite geöffnet ist. Beim Neuladen geht er verloren.")}</p><button type="button" className="primary" onClick={begin}>{testOnly ? t("Fragebogen ausprobieren") : t("Fragebogen beginnen")} <span aria-hidden="true">→</span></button></section> : <>
       <div className="section-head"><p className="eyebrow">{review ? t("Vor dem Speichern") : t("Abschnitt {0} von {1}", progress + 1, sectionIndexes.length)}</p><h1 tabIndex={-1} ref={heading}>{review ? t("Angaben prüfen & abschließen") : sections[step].title}</h1><div className="progress" role="progressbar" aria-label={t("Abschnittsfortschritt")} aria-valuemin={0} aria-valuemax={sectionIndexes.length} aria-valuenow={progress}><span style={{ width: `${sectionIndexes.length ? progress / sectionIndexes.length * 100 : 0}%` }} /></div>{!review && sections[step].description && <p>{sections[step].description}</p>}</div>

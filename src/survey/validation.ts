@@ -17,7 +17,7 @@ const questionSchema = z.object({
 export const definitionSchema = z.object({
   version: z.string().min(1).max(100), introduction: z.array(z.string().max(4000)).max(10), introContent: contentBlocksSchema.optional(),
   thankYouContent: richTextContentSchema.nullish(),
-  sections: z.array(z.object({ id: key, title: z.string().min(1).max(200), description: z.string().max(1000).optional(), questions: z.array(questionSchema).min(1).max(80), content: contentBlocksSchema.optional() })).min(1).max(15)
+  sections: z.array(z.object({ id: key, title: z.string().min(1).max(200), description: z.string().max(1000).optional(), questions: z.array(questionSchema).min(1).max(80), content: contentBlocksSchema.optional() })).max(15)
 }).superRefine((def, ctx) => {
   if (new TextEncoder().encode(JSON.stringify(def)).length > 256000) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Die Fragebogenfassung ist zu groß (höchstens 256 KB).' })
   if (def.introContent?.some(block => block.afterQuestion)) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Einleitungsblöcke haben keine Frageposition.' })

@@ -12,18 +12,20 @@ const draftSchema = z.object({
   participantLanguage: z.enum(participantLanguages).optional(),
   hideQuestionCodes: z.boolean().optional(),
 }).strict()
+const createSchema = draftSchema.extend({ emailRegistration: z.literal(true).optional() })
 const updatedSchema = draftSchema.extend({ surveyID: z.number().int().positive() })
 const result = (value: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(value) }] })
 export const draftTools = [
   {
     name: 'createSurveyDraft',
-    description: 'Legt einen vollständigen Fragebogen als Entwurf an. definition enthält version, introduction und sections mit stabilen Fragekennungen. Keine Veröffentlichung und keine Rohantworten.',
-    parameters: draftSchema.shape,
+    description: 'Legt einen vollständigen Fragebogen als Entwurf an. definition enthält version, introduction und sections mit stabilen Fragekennungen. Für eine eigenständige E-Mail-Anmeldung emailRegistration: true mit leeren sections verwenden. Die Datenschutzhinweise werden im Editor ergänzt. Keine Veröffentlichung und keine Rohantworten.',
+    parameters: createSchema.shape,
     handler: async (args: Record<string, unknown>, req: PayloadRequest) => {
       if (!req.user) throw new Error('Anmeldung erforderlich')
-      const data = draftSchema.parse(args)
+      const data = createSchema.parse(args)
       const survey = await req.payload.create({ collection: 'surveys', data: {
         title: data.title, slug: data.slug, phase: 'draft', ...toStored(data.definition as Definition),
+        ...(data.emailRegistration ? { privacy: { contactMode: 'email-only' } } : {}),
         ...(data.participantLanguage !== undefined ? { participantLanguage: data.participantLanguage } : {}),
         ...(data.hideQuestionCodes !== undefined ? { hideQuestionCodes: data.hideQuestionCodes } : {}),
       }, req, overrideAccess: false })

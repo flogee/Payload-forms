@@ -17,7 +17,7 @@ export const privacySettingsSchema = z.object({
   retentionYears: z.number().int().min(0).max(20).default(0),
   rights: text(),
   complaintAuthority: text(1000),
-  contactMode: z.enum(['none', 'optional', 'required']).default('none'),
+  contactMode: z.enum(['none', 'optional', 'required', 'email-only']).default('none'),
   contactPurpose: text(),
   contactRetention: text(),
   consentText: text(2000),
@@ -91,8 +91,10 @@ export function privacyNotice(settings: PrivacySettings): PrivacyNotice | undefi
     { title: 'Aufbewahrung der Antworten', text: settings.retention },
   ]
   if (settings.contactMode !== 'none') sections.push({
-    title: 'Individuelle Rückmeldung',
-    text: `${settings.contactPurpose}\n\n${settings.contactRetention}\n\nKontaktangaben werden getrennt von den Antworten gespeichert. Eine Zuordnung bleibt für die individuelle Rückmeldung möglich.`,
+    title: settings.contactMode === 'email-only' ? 'E-Mail-Anmeldung' : 'Individuelle Rückmeldung',
+    text: settings.contactMode === 'email-only'
+      ? `${settings.contactPurpose}\n\n${settings.contactRetention}`
+      : `${settings.contactPurpose}\n\n${settings.contactRetention}\n\nKontaktangaben werden getrennt von den Antworten gespeichert. Eine Zuordnung bleibt für die individuelle Rückmeldung möglich.`,
   })
   sections.push(
     { title: 'Deine Rechte', text: settings.rights },
@@ -115,6 +117,7 @@ export const participantContactSchema = z.object({
 }).strict()
 
 export const liveParticipantContactSchema = participantContactSchema.extend({ name: z.string().trim().max(200).default('') })
+const registrationContactSchema = liveParticipantContactSchema.extend({ name: z.literal('').default('') })
 
 export function participantContact(
   settings: PrivacySettings, requested: boolean, value: unknown, testOnly: boolean,
@@ -124,12 +127,14 @@ export function participantContact(
     return undefined
   }
   if (!requested) {
-    if (settings.contactMode === 'required') throw new Error('Für diesen Fragebogen sind Kontaktangaben erforderlich.')
+    if (settings.contactMode === 'required' || settings.contactMode === 'email-only') throw new Error('Für diesen Fragebogen sind Kontaktangaben erforderlich.')
     if (value !== undefined) throw new Error('Kontaktangaben benötigen eine eigene Zustimmung.')
     return undefined
   }
-  const parsed = (testOnly ? participantContactSchema : liveParticipantContactSchema).safeParse(value)
-  if (!parsed.success) throw new Error(testOnly ? 'Bitte Name und gültige E-Mail-Adresse ergänzen.' : 'Bitte eine gültige E-Mail-Adresse ergänzen.')
+  const registration = settings.contactMode === 'email-only'
+  const schema = registration ? registrationContactSchema : testOnly ? participantContactSchema : liveParticipantContactSchema
+  const parsed = schema.safeParse(value)
+  if (!parsed.success) throw new Error(testOnly && !registration ? 'Bitte Name und gültige E-Mail-Adresse ergänzen.' : 'Bitte eine gültige E-Mail-Adresse ergänzen.')
   if (testOnly && !parsed.data.email.toLowerCase().endsWith('.invalid')) {
     throw new Error('Im Pretest bitte eine erfundene E-Mail mit der Endung .invalid verwenden, zum Beispiel test@example.invalid.')
   }
