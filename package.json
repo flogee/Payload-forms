@@ -1,6 +1,6 @@
 {
   "name": "payload-forms",
-  "version": "0.3.13",
+  "version": "0.3.14",
   "description": "Self-hosted questionnaires, fictional pretests and gated real surveys with Payload CMS and Cloudflare",
   "license": "MIT",
   "type": "module",

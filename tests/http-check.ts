@@ -200,7 +200,7 @@ await checkEvaluationRunsHTTP(base, token)
 await checkVotingHTTP(base, token)
 const draftSlug = `mcp-test-${randomUUID()}`
 const draftInstrument = { ...fromStored(survey), version: draftSlug }
-const created = await mcp('tools/call', { name: 'createSurveyDraft', arguments: { title: 'MCP TEST ONLY', slug: draftSlug, definition: draftInstrument, hideQuestionCodes: true } })
+const created = await mcp('tools/call', { name: 'createSurveyDraft', arguments: { title: 'MCP TEST ONLY', slug: draftSlug, definition: draftInstrument, hideQuestionCodes: true, participantLanguage: 'en' } })
 assert.ok(!created.result.isError && JSON.stringify(created).includes('draft'), `MCP creates a full questionnaire draft: ${JSON.stringify(created).slice(0, 1400)}`)
 const draftResult = await request(`/api/surveys?where[slug][equals]=${draftSlug}`, { headers: auth })
 const draftSurvey = (await draftResult.json() as any).docs[0]
@@ -216,6 +216,7 @@ const updatedSurvey = await request(`/api/surveys/${draftSurvey.id}`, { headers:
 const updatedDraft = await updatedSurvey.json() as any
 assert.equal(updatedDraft.title, 'MCP TEST UPDATED')
 assert.equal(updatedDraft.hideQuestionCodes, true, 'an older MCP update preserves the participant display setting')
+assert.equal(updatedDraft.participantLanguage, 'en', 'an older MCP update preserves the participant UI language')
 const editablePretest = await mcp('tools/call', { name: 'updateSurveyDraft', arguments: { surveyID: survey.id, title: survey.title, slug: survey.slug, definition: fromStored(survey), hideQuestionCodes: true } })
 assert.ok(!editablePretest.result.isError, 'MCP can edit a pretest with test responses')
 const pretestDisplay = await request(`/api/surveys/${survey.id}?depth=0`, { headers: auth })
@@ -225,7 +226,9 @@ assert.equal((await json(`/api/surveys/${draftSurvey.id}`, { phase: 'live' }, to
 assert.equal((await json(`/api/surveys/${draftSurvey.id}`, { phase: 'pretest' }, token, 'PATCH')).status, 200, 'saving pretest opens participation')
 const opened = await request(`/f/${draftSlug}`)
 assert.equal(opened.status, 200)
-assert.ok((await opened.text()).includes('MCP TEST UPDATED'), 'participant page uses this form title')
+const openedHTML = await opened.text()
+assert.ok(openedHTML.includes('MCP TEST UPDATED'), 'participant page uses this form title')
+assert.ok(openedHTML.includes('Start the pretest') && openedHTML.includes('Privacy information'), 'English UI labels are rendered on the public form')
 const draftSharing = await request(`/api/survey/share/${draftSurvey.id}`, { headers: auth })
 assert.equal(draftSharing.status, 200)
 assert.equal((await draftSharing.json() as any).links[0].url, `${base}/f/${draftSlug}`)
