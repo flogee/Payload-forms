@@ -111,10 +111,12 @@ export const Surveys: CollectionConfig = {
     ] },
     // Keep tabs unnamed: names would nest stored fields and change the schema.
     { type: 'tabs', tabs: [
+      { label: 'Einleitung', fields: [
+        { name: 'introduction', label: 'Einleitungstext', type: 'array', labels: { singular: 'Absatz', plural: 'Absätze' }, admin: { initCollapsed: true, className: 'survey-editor__outline', components: { RowLabel: '/components/SurveyEditorRowLabels#SurveyEditorIntroductionLabel' } }, fields: [{ name: 'text', label: 'Absatz', type: 'textarea', required: true }] },
+        introContentField,
+      ] },
       { label: 'Fragen und Inhalte', fields: [
         { name: 'editorGuide', type: 'ui', admin: { components: { Field: '/components/SurveyEditorGuide#SurveyEditorGuide' } } },
-        { name: 'introduction', label: 'Einleitung', type: 'array', labels: { singular: 'Absatz', plural: 'Absätze' }, admin: { initCollapsed: true, className: 'survey-editor__outline', components: { RowLabel: '/components/SurveyEditorRowLabels#SurveyEditorIntroductionLabel' } }, fields: [{ name: 'text', label: 'Absatz', type: 'textarea', required: true }] },
-        introContentField,
         { name: 'sections', label: 'Abschnitte', labels: { singular: 'Abschnitt', plural: 'Abschnitte' }, type: 'array', admin: { initCollapsed: true, className: 'survey-editor__outline', components: { RowLabel: '/components/SurveyEditorRowLabels#SurveyEditorSectionLabel' } }, required: true, fields: [{ name: 'key', label: 'Abschnittkennung', type: 'text', required: true }, { name: 'title', label: 'Titel', type: 'text', required: true }, { name: 'description', label: 'Hinweis', type: 'textarea' }, { name: 'questions', label: 'Fragen', labels: { singular: 'Frage', plural: 'Fragen' }, type: 'array', admin: { initCollapsed: true, components: { RowLabel: '/components/SurveyEditorRowLabels#SurveyEditorQuestionLabel' } }, fields: questionFields, required: true }, sectionContentField] },
       ] },
       { label: 'Dankeseite', fields: [
