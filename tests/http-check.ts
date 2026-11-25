@@ -200,7 +200,7 @@ await checkEvaluationRunsHTTP(base, token)
 await checkVotingHTTP(base, token)
 const draftSlug = `mcp-test-${randomUUID()}`
 const draftInstrument = { ...fromStored(survey), version: draftSlug }
-const created = await mcp('tools/call', { name: 'createSurveyDraft', arguments: { title: 'MCP TEST ONLY', slug: draftSlug, definition: draftInstrument } })
+const created = await mcp('tools/call', { name: 'createSurveyDraft', arguments: { title: 'MCP TEST ONLY', slug: draftSlug, definition: draftInstrument, hideQuestionCodes: true } })
 assert.ok(!created.result.isError && JSON.stringify(created).includes('draft'), `MCP creates a full questionnaire draft: ${JSON.stringify(created).slice(0, 1400)}`)
 const draftResult = await request(`/api/surveys?where[slug][equals]=${draftSlug}`, { headers: auth })
 const draftSurvey = (await draftResult.json() as any).docs[0]
@@ -213,9 +213,14 @@ assert.equal(draftSurvey.sections.reduce((n: number, s: any) => n + s.questions.
 const updated = await mcp('tools/call', { name: 'updateSurveyDraft', arguments: { surveyID: draftSurvey.id, title: 'MCP TEST UPDATED', slug: draftSlug, definition: draftInstrument } })
 assert.ok(!updated.result.isError, 'MCP updates drafts')
 const updatedSurvey = await request(`/api/surveys/${draftSurvey.id}`, { headers: auth })
-assert.equal((await updatedSurvey.json() as any).title, 'MCP TEST UPDATED')
-const editablePretest = await mcp('tools/call', { name: 'updateSurveyDraft', arguments: { surveyID: survey.id, title: survey.title, slug: survey.slug, definition: fromStored(survey) } })
+const updatedDraft = await updatedSurvey.json() as any
+assert.equal(updatedDraft.title, 'MCP TEST UPDATED')
+assert.equal(updatedDraft.hideQuestionCodes, true, 'an older MCP update preserves the participant display setting')
+const editablePretest = await mcp('tools/call', { name: 'updateSurveyDraft', arguments: { surveyID: survey.id, title: survey.title, slug: survey.slug, definition: fromStored(survey), hideQuestionCodes: true } })
 assert.ok(!editablePretest.result.isError, 'MCP can edit a pretest with test responses')
+const pretestDisplay = await request(`/api/surveys/${survey.id}?depth=0`, { headers: auth })
+assert.equal(pretestDisplay.status, 200)
+assert.equal((await pretestDisplay.json() as any).hideQuestionCodes, true)
 assert.equal((await json(`/api/surveys/${draftSurvey.id}`, { phase: 'live' }, token, 'PATCH')).status, 400, 'real collection remains blocked')
 assert.equal((await json(`/api/surveys/${draftSurvey.id}`, { phase: 'pretest' }, token, 'PATCH')).status, 200, 'saving pretest opens participation')
 const opened = await request(`/f/${draftSlug}`)

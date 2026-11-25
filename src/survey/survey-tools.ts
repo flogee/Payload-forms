@@ -108,6 +108,7 @@ export function duplicateDraftData(source: Record<string, any>, requestID: strin
     title: `${source.title} · Kopie`, slug: identity, phase: 'draft' as const,
     ...toStored({ ...fromStored(source), version: identity }),
     branding: readBranding(source.branding),
+    hideQuestionCodes: source.hideQuestionCodes === true,
     privacy: { ...readPrivacySettings(source.privacy), reviewed: false },
     notifications: { enabled: false, recipients: '' }, retentionReminders: { enabled: false },
   }

@@ -18,6 +18,8 @@ import * as migration_20261116_081552_editorial_corrections from './20261116_081
 
 import * as migration_20261125_090000_thank_you_content from './20261125_090000_thank_you_content';
 
+import * as migration_20261125_120000_hide_participant_question_codes from './20261125_120000_hide_participant_question_codes';
+
 export const migrations = [
   {
     up: migration_20261005_100813_initial_schema.up,
@@ -105,4 +107,5 @@ export const migrations = [
     name: '20261116_081552_editorial_corrections'
   },
   { up: migration_20261125_090000_thank_you_content.up, down: migration_20261125_090000_thank_you_content.down, name: '20261125_090000_thank_you_content' },
+  { up: migration_20261125_120000_hide_participant_question_codes.up, down: migration_20261125_120000_hide_participant_question_codes.down, name: '20261125_120000_hide_participant_question_codes' },
 ];

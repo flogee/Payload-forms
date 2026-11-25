@@ -9,7 +9,9 @@ Create versioned questionnaires, share a participation link or QR code, and revi
 Match the participation URL `/f/<slug>` to its survey ID, version and phase using
 `findSurveys`. The connected server's tool list and schema describe its installed capabilities.
 `updateSurveyDraft` replaces the full definition of that ID in either draft or
-pretest phase. Keep the existing pretest ID, slug and version to update the same
+pretest phase. Set the optional `hideQuestionCodes` argument to control whether
+participants see question codes. The editor exposes the same setting under
+**Veröffentlichen**. The setting affects presentation only. Keep the existing pretest ID, slug and version to update the same
 participation link. Updating a separate draft changes only that draft. Test
 responses do not freeze a pretest. The tool cannot activate a survey, update
 live or closed surveys, or edit a survey after its first real response.
