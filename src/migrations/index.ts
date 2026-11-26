@@ -23,6 +23,7 @@ import * as migration_20261125_120000_hide_participant_question_codes from './20
 import * as migration_20261125_170000_participant_language from './20261125_170000_participant_language';
 
 import * as migration_20261125_230000_required_survey_questions from './20261125_230000_required_survey_questions';
+import * as migration_20261126_100000_participant_notice from './20261126_100000_participant_notice';
 
 export const migrations = [
   {
@@ -114,4 +115,5 @@ export const migrations = [
   { up: migration_20261125_120000_hide_participant_question_codes.up, down: migration_20261125_120000_hide_participant_question_codes.down, name: '20261125_120000_hide_participant_question_codes' },
   { up: migration_20261125_170000_participant_language.up, down: migration_20261125_170000_participant_language.down, name: '20261125_170000_participant_language' },
   { up: migration_20261125_230000_required_survey_questions.up, down: migration_20261125_230000_required_survey_questions.down, name: '20261125_230000_required_survey_questions' },
+  { up: migration_20261126_100000_participant_notice.up, down: migration_20261126_100000_participant_notice.down, name: '20261126_100000_participant_notice' },
 ];

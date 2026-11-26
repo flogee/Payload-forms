@@ -1,5 +1,6 @@
 import { createHash, createHmac } from 'node:crypto'
 import type { PrivacyNotice } from './privacy'
+import type { Definition } from './types'
 
 export function canonicalJSON(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(item => canonicalJSON(item)).join(',')}]`
@@ -12,6 +13,12 @@ export function canonicalJSON(value: unknown): string {
 
 export function privacyHash(notice: PrivacyNotice): string {
   return digest(notice)
+}
+
+// An introduction notice can be corrected while a participant is answering.
+export function responseInstrumentRevision(definition: Definition): string {
+  const { participantNotice: _participantNotice, ...instrument } = definition
+  return digest(instrument)
 }
 
 export function digest(value: unknown): string {

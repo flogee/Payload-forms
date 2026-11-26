@@ -30,7 +30,7 @@ test('human correction retains survey identity, frozen timestamp and original re
     content[0].image = 2; content[0].alt = 'New logo'
     content[1].content.root.children[0].textFormat = 0; content[1].content.root.children[0].textStyle = ''
     content[1].content.root.children[0].children[0].text = 'Clarified introduction'
-    const updated = await h.payload.update({ ...args, id: doc.id, data: { ...approval, sections, introContent: content } })
+    const updated = await h.payload.update({ ...args, id: doc.id, data: { ...approval, sections, introContent: content, participantNotice: 'Short synthetic participation notice.' } })
     assert.equal(updated.id, doc.id); assert.equal(updated.version, doc.version); assert.equal(updated.slug, doc.slug)
     assert.equal(updated.firstRealResponseAt, doc.firstRealResponseAt)
     assert.equal(updated.sections[0].questions[0].label, 'Clearer wording')
@@ -40,6 +40,8 @@ test('human correction retains survey identity, frozen timestamp and original re
     assert.equal(audit.status, 'committed'); assert.equal(audit.corrected_by_id, 777)
     assert.equal(JSON.parse(String(audit.before)).definition.sections[0].questions[0].label, 'Original wording')
     assert.equal(JSON.parse(String(audit.after)).definition.sections[0].questions[0].label, 'Clearer wording')
+    assert.equal(JSON.parse(String(audit.before)).definition.participantNotice, undefined)
+    assert.equal(JSON.parse(String(audit.after)).definition.participantNotice, 'Short synthetic participation notice.')
     assert.equal(h.native.prepare('SELECT instrument_edit_token FROM surveys').get().instrument_edit_token, null)
     assert.equal(updated.editorialCorrection, false); assert.equal(updated.correctionReason, '')
     const serialized = structuredClone(updated)
