@@ -16,6 +16,7 @@ const questionSchema = z.object({
 })
 export const definitionSchema = z.object({
   version: z.string().min(1).max(100), introduction: z.array(z.string().max(4000)).max(10), introContent: contentBlocksSchema.optional(),
+  participantNotice: z.string().max(500).nullish(),
   thankYouContent: richTextContentSchema.nullish(),
   sections: z.array(z.object({ id: key, title: z.string().min(1).max(200), description: z.string().max(1000).optional(), questions: z.array(questionSchema).min(1).max(80), content: contentBlocksSchema.optional() })).max(15)
 }).superRefine((def, ctx) => {

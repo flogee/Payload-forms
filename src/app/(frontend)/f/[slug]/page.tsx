@@ -8,7 +8,7 @@ import { fromStored } from '@/survey/storage'
 import { validSurveySlug } from '@/survey/sharing'
 import { Survey } from '../../Survey'
 import { isStandaloneRegistration, privacyNotice, readPrivacySettings } from '@/survey/privacy'
-import { digest, privacyHash } from '@/survey/privacy-crypto'
+import { responseInstrumentRevision, privacyHash } from '@/survey/privacy-crypto'
 import { readBranding } from '@/survey/branding'
 import { authorizedEvaluationRun, evaluationRunOpen } from '@/survey/evaluation-runs'
 import { responseDatabase } from '@/survey/response-store'
@@ -54,5 +54,5 @@ export default async function ParticipationPage({ params, searchParams }: {
   const privacy = privacyNotice(readPrivacySettings(survey.privacy))
   if (isStandaloneRegistration(privacy?.contactMode) !== (definition.sections.length === 0)) notFound()
   const hideQuestionCodes = survey.hideQuestionCodes === true
-  return <Survey language={readParticipantLanguage(survey.participantLanguage)} testOnly={mode === 'pretest'} definition={hideQuestionCodes ? participantDefinition(definition) : definition} hideQuestionCodes={hideQuestionCodes} instrumentRevision={digest(definition)} evaluationRun={evaluationRun} branding={readBranding(survey.branding)} surveyID={survey.id} title={survey.title} homeURL={`/f/${survey.slug}`} privacy={privacy} privacyHash={privacy && privacyHash(privacy)} />
+  return <Survey language={readParticipantLanguage(survey.participantLanguage)} testOnly={mode === 'pretest'} definition={hideQuestionCodes ? participantDefinition(definition) : definition} hideQuestionCodes={hideQuestionCodes} instrumentRevision={responseInstrumentRevision(definition)} evaluationRun={evaluationRun} branding={readBranding(survey.branding)} surveyID={survey.id} title={survey.title} homeURL={`/f/${survey.slug}`} privacy={privacy} privacyHash={privacy && privacyHash(privacy)} />
 }

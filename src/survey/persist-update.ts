@@ -5,7 +5,7 @@ import { editorialState, type EditorialCorrection } from './editorial-correction
 
 const instrumentArrays = ['introduction', 'introContent', 'sections'] as const
 // Server-only snapshots from the validated collection hook, scoped to request + ID.
-export const instrumentFields = ['title', 'slug', 'version', 'introduction', 'introContent', 'sections', 'privacy', 'thankYouContent'] as const
+export const instrumentFields = ['title', 'slug', 'version', 'introduction', 'introContent', 'sections', 'privacy', 'thankYouContent', 'participantNotice'] as const
 type Snapshot = { arrays: string[]; instrument: string[]; phase: unknown; updatedAt: unknown; firstRealResponseAt: unknown; correction?: EditorialCorrection; approved?: Record<string, unknown>; approvedState?: string }
 const originals = new WeakMap<Partial<PayloadRequest>, Map<string, Snapshot>>()
 

@@ -7,7 +7,7 @@ import { fromStored } from '@/survey/storage'
 import { validateAnswers } from '@/survey/validation'
 import { surveyOriginStatus } from '@/survey/origins'
 import { isStandaloneRegistration, participantContact, liveParticipantContactSchema, privacyNotice, readPrivacySettings, type PrivacyReceipt } from '@/survey/privacy'
-import { digest, erasureKey, privacyHash } from '@/survey/privacy-crypto'
+import { digest, erasureKey, privacyHash, responseInstrumentRevision } from '@/survey/privacy-crypto'
 import { saveSubmission, responseDatabase } from '@/survey/response-store'
 import { mailPolicy, readNotificationSettings } from '@/survey/notifications'
 import { boundedBody, BodyTooLarge } from '@/survey/bounded-body'
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     } catch (error) { return json({ error: error instanceof EvaluationRunError ? error.message : 'Durchlauf derzeit nicht verfügbar.' }, error instanceof EvaluationRunError ? error.status : 503) }
   }
   const definition = run ? JSON.parse(run.instrument) as Definition : fromStored(survey)
-  if (input.instrumentRevision && input.instrumentRevision !== digest(definition)) return json({ error: 'Die Fragebogeninhalte wurden geändert. Bitte lade die Seite neu.' }, 409)
+  if (input.instrumentRevision && input.instrumentRevision !== responseInstrumentRevision(definition)) return json({ error: 'Die Fragebogeninhalte wurden geändert. Bitte lade die Seite neu.' }, 409)
   const validated = validateAnswers(definition, input.answers)
   if (Object.keys(validated.errors).length) return json({ error: 'Bitte die markierten Angaben prüfen.', fields: validated.errors }, 400)
   const settings = readPrivacySettings(survey.privacy), notice = privacyNotice(settings)

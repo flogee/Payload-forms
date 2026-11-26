@@ -123,6 +123,8 @@ export const Surveys: CollectionConfig = {
       { label: 'Einleitung', fields: [
         { name: 'introduction', label: 'Einleitungstext', type: 'array', labels: { singular: 'Absatz', plural: 'Absätze' }, admin: { initCollapsed: true, className: 'survey-editor__outline', components: { RowLabel: '/components/SurveyEditorRowLabels#SurveyEditorIntroductionLabel' } }, fields: [{ name: 'text', label: 'Absatz', type: 'textarea', required: true }] },
         introContentField,
+        { name: 'participantNotice', label: 'Kurzhinweis vor der Teilnahme', type: 'textarea', maxLength: 500,
+          admin: { description: 'Optional. Ersetzt den Standardhinweis in echten Befragungen. Bei einer eigenständigen Anmeldung steht der Text vor den Eingabefeldern.' } },
       ] },
       { label: 'Fragen und Inhalte', fields: [
         { name: 'editorGuide', type: 'ui', admin: { components: { Field: '/components/SurveyEditorGuide#SurveyEditorGuide' } } },
