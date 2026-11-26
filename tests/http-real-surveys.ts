@@ -178,5 +178,37 @@ export async function checkRealSurveysHTTP(base: string, token: string, apiKey: 
   const { docs: registrationContacts } = await storedContact.json() as { docs: { email: string; testOnly: boolean }[] }
   assert.equal(registrationContacts[0].email, inputRegistration.contact.email)
   assert.equal(registrationContacts[0].testOnly, false)
+  const namedSlug = `synthetic-live-named-registration-${randomUUID()}`
+  const namedPrivacy = testPrivacy({ contactMode: 'name-and-email', reviewed: true })
+  const createdNamed = await json('/api/surveys', {
+    title: 'SYNTHETIC NAMED REGISTRATION', slug: namedSlug, phase: 'live', privacy: namedPrivacy,
+    participantLanguage: 'en', ...toStored({ version: namedSlug, introduction: [], sections: [] }),
+  })
+  assert.equal(createdNamed.status, 201)
+  const { id: namedID } = (await createdNamed.json() as { doc: { id: number } }).doc
+  const namedPage = await request(`/f/${namedSlug}`)
+  assert.equal(namedPage.status, 200)
+  const namedHTML = await namedPage.text()
+  assert.match(namedHTML, /<input(?=[^>]*id="registration-name")(?=[^>]*type="text")[^>]*required/)
+  assert.match(namedHTML, /<input(?=[^>]*id="registration-email")(?=[^>]*type="email")[^>]*required/)
+  const inputNamed = {
+    ...inputRegistration, surveyID: namedID, version: namedSlug, submissionID: randomUUID(),
+    privacy: { ...inputRegistration.privacy, noticeHash: privacyHash(privacyNotice(namedPrivacy)!) },
+  }
+  await status(json('/api/survey/submit', inputNamed, 'POST', {}), 400, 'named registration requires a name even in live mode')
+  const savedNamed = await json('/api/survey/submit', {
+    ...inputNamed, contact: { ...inputNamed.contact, name: 'Synthetic entrant' },
+  }, 'POST', {})
+  assert.equal(savedNamed.status, 201)
+  const { id: namedResponseID } = await savedNamed.json() as { id: number }
+  const namedStored = await request(`/api/response-contacts?depth=0&where[response][equals]=${namedResponseID}`, { headers: auth })
+  assert.equal(namedStored.status, 200)
+  const { docs: namedContacts } = await namedStored.json() as { docs: { name: string; email: string; testOnly: boolean }[] }
+  assert.equal(namedContacts[0].name, 'Synthetic entrant')
+  assert.equal(namedContacts[0].email, inputNamed.contact.email)
+  assert.equal(namedContacts[0].testOnly, false)
+  const namedResponse = await request(`/api/responses/${namedResponseID}?depth=0`, { headers: auth })
+  assert.equal(namedResponse.status, 200)
+  assert.deepEqual((await namedResponse.json() as { answers: unknown }).answers, {})
   console.log('PASS: synthetic live activation, real consent and contact contracts, protected analysis, immutable versions, closure, mode markers and fictional machine separation.')
 }

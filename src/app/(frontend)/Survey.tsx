@@ -4,7 +4,7 @@ import { Fragment, useEffect, useRef, useState } from 'react'
 import type { Answer, Answers, Choice, Count, Definition, Question } from '@/survey/types'
 import { hasAnswer, questions, validateSectionAnswers, visible, visibleSectionIndexes } from '@/survey/validation'
 import type { ParticipantContact, PrivacyNotice as Notice } from '@/survey/privacy'
-import { liveParticipantContactSchema, participantContactSchema } from '@/survey/privacy'
+import { isStandaloneRegistration, liveParticipantContactSchema, participantContactSchema } from '@/survey/privacy'
 import { PrivacyNotice } from '@/components/PrivacyNotice'
 import { ParticipantPrivacy } from '@/components/ParticipantPrivacy'
 import { SurveyPrivacyDialog } from '@/components/SurveyPrivacyDialog'
@@ -48,7 +48,8 @@ export function Survey({ testOnly = true, definition, language = 'de', hideQuest
   const [step, setStep] = useState(-1), [answers, setAnswers] = useState<Answers>({}), [errors, setErrors] = useState<Record<string, string>>({}), [confirm, setConfirm] = useState(false), [busy, setBusy] = useState(false), [saved, setSaved] = useState(false), [message, setMessage] = useState('')
   const [consent, setConsent] = useState(false), [contactConsent, setContactConsent] = useState(false), [contact, setContact] = useState<Partial<ParticipantContact>>({})
   const started = useRef(0), submission = useRef(''), heading = useRef<HTMLHeadingElement>(null)
-  const registration = privacy?.contactMode === 'email-only'
+  const registration = privacy && isStandaloneRegistration(privacy.contactMode)
+  const registrationNeedsName = privacy?.contactMode === 'name-and-email'
   const confirmed = confirm || (registration && !testOnly)
   useEffect(() => { if (saved) { window.scrollTo({ top: 0, behavior: 'instant' }); heading.current?.focus() } }, [saved])
   const sections = definition.sections, review = step === sections.length, all = questions(definition), applicable = all.filter(q => visible(q, answers)), completed = applicable.filter(q => hasAnswer(answers[q.id])).length
@@ -76,11 +77,14 @@ export function Survey({ testOnly = true, definition, language = 'de', hideQuest
     if (!confirmed || busy) return
     if (privacy?.legalBasis === 'consent' && !consent) { setMessage(t("Bitte die Zustimmung zur Verarbeitung der Antworten bestätigen.")); return }
     if ((registration || privacy?.contactMode === 'required') && !contactConsent) { setMessage(t("Für diese Fassung sind Kontaktangaben und die gesonderte Zustimmung erforderlich.")); return }
-    const contactSchema = testOnly && !registration ? participantContactSchema : liveParticipantContactSchema
+    const needsName = registrationNeedsName || (testOnly && !registration)
+    const contactSchema = needsName ? participantContactSchema : liveParticipantContactSchema
     if (contactConsent && (!contactSchema.safeParse(contact).success || (testOnly && !contact.email?.toLowerCase().endsWith('.invalid')))) {
-      setMessage(!testOnly ? t("Bitte eine gültige E-Mail-Adresse ergänzen.") : registration
-        ? t("Bitte eine gültige Test-E-Mail mit der Endung .invalid eingeben.")
-        : t("Bitte einen erfundenen Namen und eine gültige Test-E-Mail mit der Endung .invalid ergänzen."))
+      const missingContact = testOnly
+        ? needsName ? t("Bitte einen erfundenen Namen und eine gültige Test-E-Mail mit der Endung .invalid ergänzen.")
+          : t("Bitte eine gültige Test-E-Mail mit der Endung .invalid eingeben.")
+        : needsName ? t("Bitte Name und gültige E-Mail-Adresse ergänzen.") : t("Bitte eine gültige E-Mail-Adresse ergänzen.")
+      setMessage(missingContact)
       return
     }
     if (registration && !submission.current) {
@@ -114,11 +118,17 @@ export function Survey({ testOnly = true, definition, language = 'de', hideQuest
         {definition.introduction.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
         <SurveyContent language={language} blocks={definition.introContent} homeURL={homeURL} />
         <form onSubmit={event => { event.preventDefault(); void submit() }}>
-          <label className="registration-email" htmlFor="registration-email">{t("E-Mail-Adresse")}</label>
+          {registrationNeedsName && <div className="registration-name">
+            <label className="registration-label" htmlFor="registration-name">{t("Name")}{testOnly && ` ${t("(erfunden)")}`}</label>
+            <input id="registration-name" name="name" type="text" value={contact.name ?? ''}
+              maxLength={200} autoComplete={testOnly ? 'off' : 'name'} required disabled={busy}
+              onChange={event => setContact(previous => ({ ...previous, name: event.target.value }))} />
+          </div>}
+          <label className="registration-label" htmlFor="registration-email">{t("E-Mail-Adresse")}</label>
           <input id="registration-email" name="email" type="email" value={contact.email ?? ''}
             maxLength={254} autoComplete={testOnly ? 'off' : 'email'} required disabled={busy}
             aria-describedby={testOnly ? 'registration-test-help' : undefined}
-            onChange={event => setContact({ email: event.target.value })} />
+            onChange={event => setContact(previous => ({ ...previous, email: event.target.value }))} />
           {testOnly && <p id="registration-test-help" className="help">{t("Nur erfundene E-Mail-Adressen mit der Endung .invalid verwenden, zum Beispiel test@example.invalid.")}</p>}
           {privacy.legalBasis === 'consent' && privacy.consentText !== privacy.contactConsentText && <label className="test-confirm registration-confirm">
             <input type="checkbox" required checked={consent} disabled={busy} onChange={event => setConsent(event.target.checked)} />

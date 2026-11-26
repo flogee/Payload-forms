@@ -420,9 +420,9 @@ export interface Survey {
     rights?: string | null;
     complaintAuthority?: string | null;
     /**
-     * Kontaktdaten werden im geschützten Kontaktbereich gespeichert. Für eine eigenständige E-Mail-Anmeldung bleiben die Fragen und Abschnitte leer.
+     * Kontaktdaten werden im geschützten Kontaktbereich gespeichert. Für eigenständige Anmeldungen bleiben die Fragen und Abschnitte leer.
      */
-    contactMode?: ('none' | 'optional' | 'required' | 'email-only') | null;
+    contactMode?: ('none' | 'optional' | 'required' | 'email-only' | 'name-and-email') | null;
     contactPurpose?: string | null;
     contactRetention?: string | null;
     consentText?: string | null;
