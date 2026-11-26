@@ -3,7 +3,7 @@ import { fromStored } from '../survey/storage'
 import { validSurveySlug } from '../survey/sharing'
 import { staff } from './Users'
 import { privacyFields } from './privacy-fields'
-import { readPrivacySettings, privacyMissing } from '../survey/privacy'
+import { isStandaloneRegistration, readPrivacySettings, privacyMissing } from '../survey/privacy'
 import { readNotificationSettings } from '../survey/notifications'
 import { canonicalJSON } from '../survey/privacy-crypto'
 import { introContentField, sectionContentField, surveyTextEditor } from './content-fields'
@@ -81,7 +81,7 @@ export const Surveys: CollectionConfig = {
       || (data.retentionReminders.enabled != null && typeof data.retentionReminders.enabled !== 'boolean'))) throw new APIError('Bitte die Fristerinnerungseinstellungen prüfen.', 400)
     const retentionReminders = { ...originalDoc?.retentionReminders, ...data.retentionReminders }
     if (retentionReminders.enabled && (!privacy.enabled || !privacy.retentionYears)) throw new APIError('Für Fristerinnerungen zuerst Datenschutzinformation und eine Frist in ganzen Kalenderjahren vorbereiten.', 400)
-    if (privacy.contactMode === 'email-only') {
+    if (isStandaloneRegistration(privacy.contactMode)) {
       if (definition.sections.length) throw new APIError('Eine E-Mail-Anmeldung hat keine Frageabschnitte.', 400)
       if (merged.phase !== 'draft' && !privacy.enabled) throw new APIError('Für die E-Mail-Anmeldung zuerst die Datenschutzinformation vorbereiten.', 400)
     } else if (!definition.sections.length) {

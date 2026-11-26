@@ -35,6 +35,21 @@ test('contacts require separate choice, optional participation can omit them, an
   assert.throws(() => participantContact(testPrivacy({ contactMode: 'none' }), true, { name: 'Test', email: 'test@example.invalid' }, true))
 })
 
+test('standalone named registration requires a name and separate consent in both modes', () => {
+  const settings = testPrivacy({ contactMode: 'name-and-email' })
+  for (const testOnly of [true, false]) {
+    const email = testOnly ? 'name@example.invalid' : 'name@example.org'
+    assert.throws(() => participantContact(settings, true, { email }, testOnly), /Name/)
+    assert.throws(() => participantContact(settings, true, { name: '  ', email }, testOnly), /Name/)
+    assert.throws(() => participantContact(settings, false, { name: 'Fixture', email }, testOnly), /erforderlich/)
+    assert.deepEqual(participantContact(settings, true, { name: ' Fixture ', email }, testOnly), { name: 'Fixture', email })
+  }
+  const notice = privacyNotice(settings)!
+  const oldNotice = privacyNotice(testPrivacy({ contactMode: 'email-only' }))!
+  assert.deepEqual(notice.sections, oldNotice.sections)
+  assert.notEqual(privacyHash(notice), privacyHash(oldNotice))
+})
+
 test('restore suppression uses keyed digests rather than retaining plaintext submission identifiers', () => {
   const secret = 'fixture-secret-only'.repeat(4), key = '1:fixture-version:fixture-submission'
   assert.match(erasureKey(key, secret), /^[a-f0-9]{64}$/)

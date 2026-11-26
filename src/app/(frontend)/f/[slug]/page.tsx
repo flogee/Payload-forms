@@ -7,7 +7,7 @@ import config from '@payload-config'
 import { fromStored } from '@/survey/storage'
 import { validSurveySlug } from '@/survey/sharing'
 import { Survey } from '../../Survey'
-import { privacyNotice, readPrivacySettings } from '@/survey/privacy'
+import { isStandaloneRegistration, privacyNotice, readPrivacySettings } from '@/survey/privacy'
 import { digest, privacyHash } from '@/survey/privacy-crypto'
 import { readBranding } from '@/survey/branding'
 import { authorizedEvaluationRun, evaluationRunOpen } from '@/survey/evaluation-runs'
@@ -28,7 +28,7 @@ const findParticipatingSurvey = cache(async (slug: string) => {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const source = await findParticipatingSurvey((await params).slug)
   const t = participantText(readParticipantLanguage(source?.survey.participantLanguage))
-  const label = source?.survey.privacy?.contactMode === 'email-only' ? t('E-Mail-Anmeldung') : t('Fragebogen')
+  const label = isStandaloneRegistration(source?.survey.privacy?.contactMode ?? undefined) ? t('E-Mail-Anmeldung') : t('Fragebogen')
   return { title: `${label} · Payload Forms`, description: t('Fragebogen und Teilnahme'), referrer: 'no-referrer' as const }
 }
 
@@ -52,7 +52,7 @@ export default async function ParticipationPage({ params, searchParams }: {
     definition = JSON.parse(run.instrument) as Definition
   }
   const privacy = privacyNotice(readPrivacySettings(survey.privacy))
-  if ((privacy?.contactMode === 'email-only') !== (definition.sections.length === 0)) notFound()
+  if (isStandaloneRegistration(privacy?.contactMode) !== (definition.sections.length === 0)) notFound()
   const hideQuestionCodes = survey.hideQuestionCodes === true
   return <Survey language={readParticipantLanguage(survey.participantLanguage)} testOnly={mode === 'pretest'} definition={hideQuestionCodes ? participantDefinition(definition) : definition} hideQuestionCodes={hideQuestionCodes} instrumentRevision={digest(definition)} evaluationRun={evaluationRun} branding={readBranding(survey.branding)} surveyID={survey.id} title={survey.title} homeURL={`/f/${survey.slug}`} privacy={privacy} privacyHash={privacy && privacyHash(privacy)} />
 }

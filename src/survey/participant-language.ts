@@ -35,6 +35,7 @@ const english: Record<string, string> = {
   "Für diese Fassung sind Kontaktangaben und die gesonderte Zustimmung erforderlich.": "This version requires contact details and separate consent.",
   "Bitte einen erfundenen Namen und eine gültige Test-E-Mail mit der Endung .invalid ergänzen.": "Enter a made-up name and a valid test email address ending in .invalid.",
   "Bitte eine gültige E-Mail-Adresse ergänzen.": "Enter a valid email address.",
+  "Bitte Name und gültige E-Mail-Adresse ergänzen.": "Enter your name and a valid email address.",
   "Bitte eine gültige Test-E-Mail mit der Endung .invalid eingeben.": "Enter a valid test email address ending in .invalid.",
   "Anmeldung absenden": "Register",
   "Anmeldung gespeichert": "Registration saved",

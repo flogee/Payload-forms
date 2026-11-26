@@ -45,7 +45,8 @@
 .registration { max-width: 42rem; margin-inline: auto; }
 .registration h1 { text-wrap: balance; }
 .registration form { border-top: 1px solid var(--line); margin-top: 1.75rem; padding-top: 1.4rem; }
-.registration-email { display: block; margin-bottom: .4rem; font-weight: 650; }
+.registration-label { display: block; margin-bottom: .4rem; font-weight: 650; }
+.registration-name { margin-bottom: 1rem; }
 .registration-confirm { margin: 1rem 0 0; }
 .registration-confirm span { white-space: pre-line; }
 .registration-test-confirm { display: block; margin-top: .35rem; font-size: .85em; color: var(--muted); }
